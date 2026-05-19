@@ -20,6 +20,10 @@
         <nav class="sidebar-nav">
             <a class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><span class="menu-icon"><i class="fa-solid fa-table-cells-large"></i></span><span class="label">Dashboard</span></a>
             <a class="sidebar-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}"><span class="menu-icon"><i class="fa-solid fa-circle-user"></i></span><span class="label">Management User</span></a>
+            <a class="sidebar-link {{ request()->routeIs('admin.venue.*') ? 'active' : '' }}" href="{{ route('admin.venue.index') }}">
+    <span class="menu-icon"><i class="fa-solid fa-building"></i></span>
+    <span class="label">Management Venue</span>
+</a>
             <a class="sidebar-link {{ request()->routeIs('admin.courts*') ? 'active' : '' }}" href="{{ route('admin.courts') }}"><span class="menu-icon"><i class="fa-solid fa-vector-square"></i></span><span class="label">Management Lapangan</span></a>
                         <a class="sidebar-link {{ request()->routeIs('admin.openmatches*') ? 'active' : '' }}" href="{{ route('admin.openmatches') }}"><span class="menu-icon"><i class="fa-solid fa-users-line"></i></span><span class="label">Open Match</span></a>
             <a class="sidebar-link {{ request()->routeIs('admin.reviews*') ? 'active' : '' }}" href="{{ route('admin.reviews') }}"><span class="menu-icon"><i class="fa-regular fa-message"></i></span><span class="label">Review Komentar</span>@if(($pendingReviewCount ?? 0) > 0)<span class="menu-badge">{{ $pendingReviewCount }}</span>@endif</a>
@@ -63,13 +67,16 @@
                 </div>
                 <a href="{{ route('admin.profile') }}" class="topbar-profile anim-click">
                     <div class="avatar avatar-photo">
-                        @if($adminUser?->profile_photo)
-                            <img src="{{ asset($adminUser->profile_photo) }}" alt="{{ $adminUser->name }}">
-                        @else
-                            <i class="fa-solid fa-user"></i>
-                        @endif
+                        @if(isset($adminUser) && $adminUser->profile_photo)
+    <img src="{{ asset($adminUser->profile_photo) }}" alt="{{ $adminUser->name }}">
+@else
+    <i class="fa-solid fa-user"></i>
+@endif
                     </div>
-                    <div class="user-meta"><strong>{{ $adminUser?->name ?? 'Admin' }}</strong>{{ $adminUser?->email ?? 'admin@gmail.com' }}</div>
+                   <div class="user-meta">
+    <strong>{{ $adminUser->name ?? 'Admin' }}</strong>
+    {{ $adminUser->email ?? 'admin@gmail.com' }}
+</div>
                 </a>
             </div>
         </header>

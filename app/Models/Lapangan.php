@@ -12,17 +12,18 @@ class Lapangan extends Model
     protected $table = 'lapangan';
 
     protected $fillable = [
-        'nama',
-        'jenis',
-        'lokasi',
-        'harga',
-        'rating',
-        'status',
-        'deskripsi',
-        'foto',
-        'foto_gallery',
-        'fasilitas',
-    ];
+    'venue_id',
+    'nama',
+    'jenis',
+    'lokasi',
+    'harga',
+    'rating',
+    'status',
+    'deskripsi',
+    'foto',
+    'foto_gallery',
+    'fasilitas',
+];
 
     protected function casts(): array
     {
@@ -41,4 +42,9 @@ class Lapangan extends Model
     {
         return $this->hasMany(Review::class, 'lapangan_id');
     }
+
+    public function venue()
+{
+    return $this->belongsTo(Venue::class);
+}
 }

@@ -10,6 +10,7 @@ use App\Models\Redemption;
 use App\Models\Review;
 use App\Models\Reward;
 use App\Models\User;
+use App\Models\Venue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -145,38 +146,87 @@ class AdminController extends Controller
     }
 
     public function dashboard(Request $request): View
-    {
-        $revenuePerMonth = Payment::selectRaw("strftime('%m', created_at) as month, SUM(amount) as total")
-            ->where('status', 'Lunas')
-            ->groupBy('month')
-            ->pluck('total', 'month');
+{
+    $revenuePerMonth = Payment::selectRaw("
+            MONTH(created_at) as month,
+            SUM(amount) as total
+        ")
+        ->where('status', 'Lunas')
+        ->groupBy('month')
+        ->pluck('total', 'month');
 
-        $bookingPerMonth = Booking::selectRaw("strftime('%m', booking_date) as month, COUNT(*) as total")
-            ->groupBy('month')
-            ->pluck('total', 'month');
+    $bookingPerMonth = Booking::selectRaw("
+            MONTH(booking_date) as month,
+            COUNT(*) as total
+        ")
+        ->groupBy('month')
+        ->pluck('total', 'month');
 
-        $userPerMonth = User::selectRaw("strftime('%m', created_at) as month, COUNT(*) as total")
-            ->where('role', 'user')
-            ->groupBy('month')
-            ->pluck('total', 'month');
+    $userPerMonth = User::selectRaw("
+            MONTH(created_at) as month,
+            COUNT(*) as total
+        ")
+        ->where('role', 'user')
+        ->groupBy('month')
+        ->pluck('total', 'month');
 
-        $months = ['01', '02', '03', '04', '05'];
+    $months = [1, 2, 3, 4, 5];
 
-        return view('admin.dashboard', $this->layoutData($request, [
-            'stats' => [
-                ['label' => 'Total Users', 'value' => User::where('role', 'user')->count()],
-                ['label' => 'Total Lapangan', 'value' => Lapangan::count()],
-                ['label' => 'Total Pendapatan', 'value' => 'Rp ' . number_format((int) Payment::where('status', 'Lunas')->sum('amount'), 0, ',', '.')],
+    return view('admin.dashboard', $this->layoutData($request, [
+
+        'totalVenue' => Venue::count(),
+
+        'venues' => Venue::latest()
+            ->take(6)
+            ->get(),
+
+        'stats' => [
+            [
+                'label' => 'Total Users',
+                'value' => User::where('role', 'user')->count()
             ],
-            'chartUsers' => array_map(fn($m) => (int) ($userPerMonth[$m] ?? 0), $months),
-            'chartLapangan' => array_map(fn($m) => (int) ($bookingPerMonth[$m] ?? 0), $months),
-            'chartRevenue' => array_map(fn($m) => (int) ($revenuePerMonth[$m] ?? 0), $months),
-            'userRatio' => [
-                User::where('role', 'user')->where('status', 'Aktif')->count(),
-                User::where('role', 'user')->where('status', '!=', 'Aktif')->count(),
+            [
+                'label' => 'Total Lapangan',
+                'value' => Lapangan::count()
             ],
-        ]));
-    }
+            [
+                'label' => 'Total Pendapatan',
+                'value' => 'Rp ' . number_format(
+                    (int) Payment::where('status', 'Lunas')->sum('amount'),
+                    0,
+                    ',',
+                    '.'
+                )
+            ],
+        ],
+
+        'chartUsers' => array_map(
+            fn($m) => (int) ($userPerMonth[$m] ?? 0),
+            $months
+        ),
+
+        'chartLapangan' => array_map(
+            fn($m) => (int) ($bookingPerMonth[$m] ?? 0),
+            $months
+        ),
+
+        'chartRevenue' => array_map(
+            fn($m) => (int) ($revenuePerMonth[$m] ?? 0),
+            $months
+        ),
+
+        'userRatio' => [
+            User::where('role', 'user')
+                ->where('status', 'Aktif')
+                ->count(),
+
+            User::where('role', 'user')
+                ->where('status', '!=', 'Aktif')
+                ->count(),
+        ],
+
+    ]));
+}
 
     public function users(Request $request): View
     {
@@ -264,13 +314,20 @@ class AdminController extends Controller
     }
 
     public function courtCreate(Request $request): View
-    {
-        return view('lapangan.create', $this->layoutData($request));
-    }
+{
+    $venues = Venue::where('status', 'Aktif')
+        ->orderBy('name')
+        ->get();
+
+    return view('admin.lapangan.create',
+    $this->layoutData($request, compact('venues'))
+);
+}
 
     public function courtStore(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'venue_id' => ['required', 'exists:venues,id'],
             'nama' => ['required', 'string', 'max:255'],
             'jenis' => ['required', 'string', 'max:100'],
             'lokasi' => ['required', 'string', 'max:255'],
@@ -299,12 +356,15 @@ class AdminController extends Controller
 
     public function courtEdit(Request $request, Lapangan $lapangan): View
     {
-        return view('lapangan.edit', $this->layoutData($request, ['court' => $lapangan]));
+        return view('admin.lapangan.edit', $this->layoutData($request, [
+    'lapangan' => $lapangan
+]));
     }
 
     public function courtUpdate(Request $request, Lapangan $lapangan): RedirectResponse
     {
         $data = $request->validate([
+            'venue_id' => ['required', 'exists:venues,id'],
             'nama' => ['required', 'string', 'max:255'],
             'jenis' => ['required', 'string', 'max:100'],
             'lokasi' => ['required', 'string', 'max:255'],

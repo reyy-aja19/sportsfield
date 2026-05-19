@@ -1,4 +1,4 @@
-@extends('layouts.admin', ['title' => 'Tambah Lapangan', 'heading' => 'Tambah Lapangan'])
+@extends('layouts.admin')
 @section('content')
 @php
     $fallbackCourtImage = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22675%22 viewBox=%220 0 1200 675%22%3E%3Crect width=%221200%22 height=%22675%22 rx=%2236%22 fill=%22%23e9f7ec%22/%3E%3Crect x=%2260%22 y=%2260%22 width=%221080%22 height=%22555%22 rx=%2228%22 fill=%22%230fa741%22 opacity=%22.15%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2254%22 text-anchor=%22middle%22 fill=%22%230f6e31%22%3EPreview Lapangan%3C/text%3E%3C/svg%3E";
@@ -8,6 +8,21 @@
     @csrf
     <div class="grid-2">
         <div class="form-group"><label>Nama Lapangan</label><input class="input-ui" name="nama" value="{{ old('nama') }}" placeholder="Contoh: Lapangan Futsal A"></div>
+        <div class="form-group">
+    <label>Venue</label>
+
+    <select class="select-ui" name="venue_id" required>
+        <option value="">Pilih Venue</option>
+
+        @foreach($venues as $venue)
+            <option value="{{ $venue->id }}"
+                {{ old('venue_id') == $venue->id ? 'selected' : '' }}>
+                {{ $venue->name }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
         <div class="form-group"><label>Jenis Olahraga</label><select class="select-ui" name="jenis">@foreach(['Badminton','Futsal','Basket','Voli'] as $jenis)<option value="{{ $jenis }}">{{ $jenis }}</option>@endforeach</select></div>
         <div class="form-group"><label>Lokasi</label><input class="input-ui" name="lokasi" value="{{ old('lokasi') }}" placeholder="Contoh: Cirebon"></div>
         <div class="form-group"><label>Harga per Jam</label><input class="input-ui" name="harga" type="number" value="{{ old('harga') }}" placeholder="150000"></div>

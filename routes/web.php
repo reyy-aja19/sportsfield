@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\VenueController;
 use App\Http\Middleware\CekLogin;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,8 @@ Route::middleware([CekLogin::class, 'role:superadmin,admin'])
     Route::get('/lapangan/{lapangan}/edit', [AdminController::class, 'courtEdit'])->name('courts.edit');
     Route::put('/lapangan/{lapangan}', [AdminController::class, 'courtUpdate'])->name('courts.update');
     Route::delete('/lapangan/{lapangan}', [AdminController::class, 'courtDelete'])->name('courts.delete');
+    
+    Route::resource('venue', VenueController::class);
 
     Route::get('/booking', [AdminController::class, 'bookings'])->name('bookings');
     Route::post('/booking', [AdminController::class, 'bookingStore'])->name('bookings.store');
