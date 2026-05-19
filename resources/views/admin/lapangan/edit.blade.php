@@ -2,7 +2,6 @@
 @section('content')
 @php
     $fallbackCourtImage = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22675%22 viewBox=%220 0 1200 675%22%3E%3Crect width=%221200%22 height=%22675%22 rx=%2236%22 fill=%22%23e9f7ec%22/%3E%3Crect x=%2260%22 y=%2260%22 width=%221080%22 height=%22555%22 rx=%2228%22 fill=%22%230fa741%22 opacity=%22.15%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2254%22 text-anchor=%22middle%22 fill=%22%230f6e31%22%3EPreview Lapangan%3C/text%3E%3C/svg%3E";
-    $defaultFacilities = ['Parkir motor','Toilet','Musholla','Jual minuman','Jual makanan','WiFi','Tribun','Lampu malam','Ruang tunggu'];
     $selectedFacilities = old('fasilitas', $lapangan->fasilitas ?? []);
     $gallery = collect($lapangan->foto_gallery ?? [])->filter()->values();
 @endphp
@@ -10,6 +9,20 @@
     @csrf
     @method('PUT')
     <div class="grid-2">
+        <div class="form-group">
+    <label>Venue</label>
+
+    <select class="select-ui" name="venue_id" required>
+
+        @foreach($venues as $venue)
+            <option value="{{ $venue->id }}"
+                {{ old('venue_id', $lapangan->venue_id) == $venue->id ? 'selected' : '' }}>
+                {{ $venue->name }}
+            </option>
+        @endforeach
+
+    </select>
+</div>
         <div class="form-group"><label>Nama Lapangan</label><input class="input-ui" name="nama" value="{{ old('nama', $lapangan->nama) }}"></div>
         <div class="form-group"><label>Jenis Olahraga</label><select class="select-ui" name="jenis">@foreach(['Badminton','Futsal','Basket','Voli'] as $jenis)<option value="{{ $jenis }}" {{ old('jenis', $lapangan->jenis) === $jenis ? 'selected' : '' }}>{{ $jenis }}</option>@endforeach</select></div>
         <div class="form-group"><label>Lokasi</label><input class="input-ui" name="lokasi" value="{{ old('lokasi', $lapangan->lokasi) }}"></div>
@@ -19,14 +32,64 @@
     </div>
     <div class="form-group"><label>Deskripsi</label><textarea class="textarea-ui" name="deskripsi">{{ old('deskripsi', $lapangan->deskripsi) }}</textarea></div>
 
-    <div class="form-group"><label>Fasilitas</label><div class="facility-checkboxes">@foreach($defaultFacilities as $facility)<label><input type="checkbox" name="fasilitas[]" value="{{ $facility }}" {{ in_array($facility, $selectedFacilities) ? 'checked' : '' }}> {{ $facility }}</label>@endforeach</div></div>
+    <div class="form-group">
+    <label>Fasilitas</label>
+
+    {{-- fasilitas tersimpan --}}
+    <div class="facility-checkboxes" id="facility-list">
+
+        @foreach($facilities as $facility)
+
+            <label class="facility-item">
+
+                <input
+                    type="checkbox"
+                    name="fasilitas[]"
+                    value="{{ $facility->name }}"
+                    {{ in_array($facility->name, $selectedFacilities) ? 'checked' : '' }}
+                >
+
+                {{ $facility->name }}
+
+            </label>
+
+        @endforeach
+
+    </div>
+
+    {{-- tambah fasilitas baru --}}
+    <div style="display:flex; gap:10px; margin-top:15px;">
+
+        <input
+            type="text"
+            id="newFacility"
+            class="input-ui"
+            placeholder="Tambah fasilitas baru..."
+        >
+
+        <button
+            type="button"
+            class="btn-ui btn-green"
+            onclick="addFacility()"
+        >
+            Tambah
+        </button>
+
+    </div>
+</div>
 
     <div class="form-group preview-shell {{ $lapangan->foto ? 'has-image' : '' }}">
         <label>Foto Utama Saat Ini</label>
-        <img id="court-preview-image" class="preview-img" src="{{ $lapangan->foto ? asset($lapangan->foto) : $fallbackCourtImage }}" alt="{{ $lapangan->nama }}">
+        <img id="court-preview-image"
+     class="preview-img"
+     src="{{ $lapangan->foto ? asset($lapangan->foto) : $fallbackCourtImage }}"
+     alt="{{ $lapangan->nama }}">
     </div>
     @if($gallery->count())
-        <div class="form-group"><label>Slide Foto Tersimpan</label><div class="gallery-preview-row">@foreach($gallery as $photo)<img src="{{ asset($photo) }}" alt="Slide {{ $loop->iteration }}">@endforeach</div></div>
+        <div class="form-group"><label>Slide Foto Tersimpan</label><div class="gallery-preview-row">@foreach($gallery as $photo)
+    <img src="{{ asset($photo) }}"
+     alt="Slide {{ $loop->iteration }}">
+@endforeach</div></div>
     @endif
     <div class="grid-2">
         <div class="form-group"><label>Ganti Foto Utama</label><input class="input-ui" name="foto" type="file" accept="image/*" data-preview="court-preview-image"></div>
@@ -37,4 +100,48 @@
         <button class="btn-ui btn-green" type="submit">Update</button>
     </div>
 </form>
+<script>
+function addFacility() {
+
+    const input = document.getElementById('newFacility');
+    const list = document.getElementById('facility-list');
+
+    let value = input.value.trim();
+
+    if (value === '') {
+        return;
+    }
+
+    // cek duplikat
+    let exists = false;
+
+    document.querySelectorAll('#facility-list input').forEach(item => {
+        if (item.value.toLowerCase() === value.toLowerCase()) {
+            exists = true;
+        }
+    });
+
+    if (exists) {
+        alert('Fasilitas sudah ada');
+        return;
+    }
+
+    // buat checkbox baru
+    const label = document.createElement('label');
+    label.className = 'facility-item';
+
+    label.innerHTML = `
+        <input
+            type="checkbox"
+            name="fasilitas[]"
+            value="${value}"
+        >
+        ${value}
+    `;
+
+    list.appendChild(label);
+
+    input.value = '';
+}
+</script>
 @endsection

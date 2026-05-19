@@ -2,64 +2,157 @@
 
 @section('content')
 
-<div class="panel-card">
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Data Lapangan</h2>
+    <h2>Data Lapangan</h2>
 
-        <a href="/lapangan/create" class="btn btn-primary">
-            <i class="fa-solid fa-plus"></i> Tambah Lapangan
-        </a>
+    <a href="/lapangan/create" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i>
+        Tambah Lapangan
+    </a>
+
+</div>
+
+<div class="panel-grid">
+
+@foreach($lapangan as $l)
+
+@php
+    $gallery = collect($l->foto_gallery ?? []);
+
+    if ($l->foto) {
+        $gallery->prepend($l->foto);
+    }
+
+    $gallery = $gallery->unique()->values();
+@endphp
+
+<div class="court-card">
+
+    {{-- SLIDER --}}
+    <div class="court-slider">
+
+        @if($gallery->count())
+
+            @foreach($gallery as $index => $photo)
+
+                <img
+                    src="{{ asset($photo) }}"
+                    class="court-image {{ $index == 0 ? 'active' : '' }}"
+                    alt="{{ $l->nama }}"
+                >
+
+            @endforeach
+
+            @if($gallery->count() > 1)
+
+                <button class="slider-btn prev">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+
+                <button class="slider-btn next">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+
+                <div class="slider-count">
+                    1 / {{ $gallery->count() }}
+                </div>
+
+            @endif
+
+        @else
+
+            <img
+                src="https://via.placeholder.com/400x250?text=Lapangan"
+                class="court-image active"
+            >
+
+        @endif
+
     </div>
 
-    <table class="table table-bordered table-hover data-table">
+    {{-- CONTENT --}}
+    <div class="court-copy">
 
-        <thead class="table-dark">
-            <tr>
-                <th>Nama</th>
-                <th>Jenis</th>
-                <th>Harga</th>
-                <th width="180">Aksi</th>
-            </tr>
-        </thead>
+        <div class="court-top">
 
-        <tbody>
-        @foreach($lapangan as $l)
-        <tr data-search-item>
+            <div>
 
-            <td>{{ $l->nama }}</td>
+                <h3>{{ $l->nama }}</h3>
 
-            <td>{{ $l->jenis }}</td>
+                <div class="court-meta">
 
-            <td>
-                Rp {{ number_format($l->harga, 0, ',', '.') }}
-            </td>
+                    <span>
+                        <i class="fa-solid fa-futbol"></i>
+                        {{ $l->jenis }}
+                    </span>
 
-            <td>
-                <a href="/lapangan/{{ $l->id_lapangan }}/edit"
-                   class="btn btn-warning btn-sm">
+                    <span>
+                        <i class="fa-solid fa-location-dot"></i>
+                        {{ $l->venue->name ?? '-' }}
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="court-actions">
+
+                <a href="/lapangan/{{ $l->id }}/edit"
+                   class="btn-ui warning">
+                    <i class="fa-solid fa-pen"></i>
                     Edit
                 </a>
 
-                <form action="/lapangan/{{ $l->id_lapangan }}"
-                      method="POST"
-                      style="display:inline">
+                <form action="/lapangan/{{ $l->id }}"
+                      method="POST">
 
                     @csrf
                     @method('DELETE')
 
-                    <button class="btn btn-danger btn-sm">
+                    <button class="btn-ui danger">
+                        <i class="fa-solid fa-trash"></i>
                         Hapus
                     </button>
+
                 </form>
-            </td>
 
-        </tr>
-        @endforeach
+            </div>
 
-        </tbody>
+        </div>
 
-    </table>
+        <div class="court-description">
+
+            Lapangan {{ $l->nama }}
+            tersedia untuk booking harian dengan fasilitas modern
+            dan kondisi lapangan yang terawat.
+
+        </div>
+
+        <div class="court-tags">
+
+            <span>
+                <i class="fa-solid fa-money-bill-wave"></i>
+                Rp {{ number_format($l->harga,0,',','.') }}
+            </span>
+
+            <span>
+                <i class="fa-solid fa-clock"></i>
+                Booking Available
+            </span>
+
+            <span>
+                <i class="fa-solid fa-star"></i>
+                Premium Venue
+            </span>
+
+        </div>
+
+    </div>
+
+</div>
+
+@endforeach
 
 </div>
 

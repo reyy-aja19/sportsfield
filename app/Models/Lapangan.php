@@ -25,13 +25,10 @@ class Lapangan extends Model
     'fasilitas',
 ];
 
-    protected function casts(): array
-    {
-        return [
-            'foto_gallery' => 'array',
-            'fasilitas' => 'array',
-        ];
-    }
+    protected $casts = [
+    'foto_gallery' => 'array',
+    'fasilitas' => 'array',
+];
 
     public function bookings()
     {
@@ -46,5 +43,11 @@ class Lapangan extends Model
     public function venue()
 {
     return $this->belongsTo(Venue::class);
+}
+    public function getFotoUrlAttribute()
+{
+    return $this->foto
+        ? asset('uploads/lapangan/' . $this->foto)
+        : 'https://via.placeholder.com/400x250?text=Lapangan';
 }
 }

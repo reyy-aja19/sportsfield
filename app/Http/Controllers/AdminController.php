@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\Reward;
 use App\Models\User;
 use App\Models\Venue;
+use App\Models\Facility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -176,9 +177,9 @@ class AdminController extends Controller
 
         'totalVenue' => Venue::count(),
 
-        'venues' => Venue::latest()
-            ->take(6)
-            ->get(),
+        'lapangan' => Lapangan::latest()
+    ->take(6)
+    ->get(),
 
         'stats' => [
             [
@@ -319,9 +320,14 @@ class AdminController extends Controller
         ->orderBy('name')
         ->get();
 
+    $facilities = Facility::orderBy('name')->get();
+
     return view('admin.lapangan.create',
-    $this->layoutData($request, compact('venues'))
-);
+        $this->layoutData($request, [
+            'venues' => $venues,
+            'facilities' => $facilities,
+        ])
+    );
 }
 
     public function courtStore(Request $request): RedirectResponse
@@ -343,23 +349,39 @@ class AdminController extends Controller
         ]);
 
         if ($request->hasFile('foto')) {
-            $data['foto'] = $this->publicUpload($request, 'foto', 'courts');
+            $data['foto'] = $this->publicUpload($request, 'foto', 'lapangan');
         }
 
-        $data['foto_gallery'] = $this->publicUploadMultiple($request, 'foto_gallery', 'courts');
+        $data['foto_gallery'] = $this->publicUploadMultiple($request, 'foto_gallery', 'lapangan');
         $data['fasilitas'] = $this->normalizeFacilities($request->input('fasilitas', []));
+        foreach ($data['fasilitas'] as $facilityName) {
 
+    Facility::firstOrCreate([
+        'name' => $facilityName
+    ]);
+
+}
         $data['rating'] = $data['rating'] ?? 4.5;
         Lapangan::create($data);
         return redirect()->route('admin.courts')->with('success', 'Lapangan berhasil ditambahkan.');
     }
 
     public function courtEdit(Request $request, Lapangan $lapangan): View
-    {
-        return view('admin.lapangan.edit', $this->layoutData($request, [
-    'lapangan' => $lapangan
-]));
-    }
+{
+    $venues = Venue::where('status', 'Aktif')
+        ->orderBy('name')
+        ->get();
+
+    $facilities = Facility::orderBy('name')->get();
+
+    return view('admin.lapangan.edit',
+        $this->layoutData($request, [
+            'lapangan' => $lapangan,
+            'venues' => $venues,
+            'facilities' => $facilities,
+        ])
+    );
+}
 
     public function courtUpdate(Request $request, Lapangan $lapangan): RedirectResponse
     {
@@ -381,14 +403,20 @@ class AdminController extends Controller
 
         if ($request->hasFile('foto')) {
             $this->deletePublicUpload($lapangan->foto);
-            $data['foto'] = $this->publicUpload($request, 'foto', 'courts');
+            $data['foto'] = $this->publicUpload($request, 'foto', 'lapangan');
         }
 
         $existingGallery = $lapangan->foto_gallery ?? [];
-        $newGallery = $this->publicUploadMultiple($request, 'foto_gallery', 'courts');
+        $newGallery = $this->publicUploadMultiple($request, 'foto_gallery', 'lapangan');
         $data['foto_gallery'] = array_values(array_filter(array_merge($existingGallery, $newGallery)));
         $data['fasilitas'] = $this->normalizeFacilities($request->input('fasilitas', []));
+        foreach ($data['fasilitas'] as $facilityName) {
 
+    Facility::firstOrCreate([
+        'name' => $facilityName
+    ]);
+
+}
         $lapangan->update($data);
         return redirect()->route('admin.courts')->with('success', 'Lapangan berhasil diperbarui.');
     }

@@ -39,6 +39,8 @@ Route::middleware([CekLogin::class, 'role:superadmin,admin'])
     
     Route::resource('venue', VenueController::class);
 
+    Route::resource('facilities', FacilityController::class);
+
     Route::get('/booking', [AdminController::class, 'bookings'])->name('bookings');
     Route::post('/booking', [AdminController::class, 'bookingStore'])->name('bookings.store');
     Route::post('/booking/{booking}/toggle', [AdminController::class, 'bookingToggle'])->name('bookings.toggle');

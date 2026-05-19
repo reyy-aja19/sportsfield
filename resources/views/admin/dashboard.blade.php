@@ -72,102 +72,109 @@
     <div class="section-actions">
         <div>
             <h3 style="margin:0;font-size:22px;color:#0b3d20;">
-                Venue Terbaru
+                Lapangan Terbaru
             </h3>
 
             <p style="margin-top:6px;color:#5e7767;font-size:13px;">
-                Venue / lapangan terbaru yang ditambahkan admin.
+                lapangan terbaru yang ditambahkan admin.
             </p>
         </div>
-
-        <a href="{{ route('admin.courts') }}" class="btn-ui btn-green">
-            <i class="fa-solid fa-arrow-right"></i>
-            Lihat Semua
-        </a>
     </div>
 
     <div class="panel-grid">
 
-        @forelse($venues as $venue)
+        @forelse($lapangan as $item)
 
             <div class="court-card court-card-modern anim-click">
 
-                {{-- IMAGE --}}
-                <div class="court-slider">
+{{-- IMAGE --}}
+<div class="court-slider">
 
-                    @if($venue->gambar)
+    @php
+        $gallery = collect($item->foto_gallery ?? []);
 
-                        <img
-                            src="{{ asset('storage/'.$venue->gambar) }}"
-                            class="court-image"
-                            alt="{{ $venue->nama }}"
-                        >
+        if ($item->foto) {
+            $gallery->prepend($item->foto);
+        }
 
-                    @else
+        $gallery = $gallery->unique()->values();
+    @endphp
 
-                        <div class="court-empty-icon">
-                            <i class="fa-solid fa-image"></i>
-                        </div>
+    @if($gallery->count())
 
-                    @endif
+        <img
+            src="{{ asset($gallery[0]) }}"
+            class="court-image active"
+            alt="{{ $item->nama }}"
+        >
 
-                </div>
+    @else
 
-                {{-- CONTENT --}}
-                <div class="court-copy">
+        <div class="court-empty-icon">
+            <i class="fa-solid fa-image"></i>
+        </div>
 
-                    <div class="court-top">
+    @endif
 
-                        <div>
+</div>
 
-                            <h3>
-                                {{ $venue->nama }}
-                            </h3>
+{{-- CONTENT --}}
+<div class="court-copy">
 
-                            <div class="court-meta">
+    <div class="court-top">
 
-                                <span>
-                                    <i class="fa-solid fa-location-dot"></i>
-                                    {{ $venue->lokasi ?? 'Lokasi belum tersedia' }}
-                                </span>
+        <div>
 
-                                <span>
-                                    <i class="fa-solid fa-futbol"></i>
-                                    {{ $venue->kategori ?? 'Sport Venue' }}
-                                </span>
+            <h3>
+                {{ $item->nama }}
+            </h3>
 
-                            </div>
+            <div class="court-meta">
 
-                        </div>
+                <span>
+                    <i class="fa-solid fa-location-dot"></i>
+                    {{ $item->lokasi ?? 'Lokasi belum tersedia' }}
+                </span>
 
-                        <div class="court-actions">
+                <span>
+                    <i class="fa-solid fa-futbol"></i>
+                    {{ $item->jenis ?? 'Sport Venue' }}
+                </span>
 
-                            <a
-                                href="{{ route('admin.courts.edit', $venue->id) }}"
-                                class="btn-ui warning"
-                            >
-                                <i class="fa-solid fa-pen"></i>
-                            </a>
+            </div>
 
-                        </div>
+        </div>
 
-                    </div>
+        <div class="court-actions">
+
+            <a
+               href="{{ route('admin.courts.edit', $item->id) }}"
+                class="btn-ui warning btn-edit-icon"
+            >
+                <i class="fa-solid fa-pen"></i>
+            </a>
+
+        </div>
+
+    </div>
+```
+
 
                     <div class="court-description">
-                        {{ Str::limit($venue->deskripsi ?? 'Tidak ada deskripsi venue.', 120) }}
+                        {{ Str::limit($item->deskripsi ?? 'Tidak ada deskripsi lapangan.', 120) }}
                     </div>
 
                     <div class="court-tags">
 
                         <span>
                             <i class="fa-solid fa-money-bill"></i>
-                            Rp {{ number_format($venue->harga ?? 0,0,',','.') }}
+                            Rp {{ number_format($item->harga ?? 0,0,',','.') }}
                         </span>
 
                         <span>
                             <i class="fa-solid fa-clock"></i>
-                            {{ $venue->jam_buka ?? '08:00' }} -
-                            {{ $venue->jam_tutup ?? '22:00' }}
+                            {{ $item->jam_buka ?? '08:00' }} -
+                            {{ $item->jam_tutup ?? '22:00' }}
                         </span>
 
                     </div>

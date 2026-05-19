@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lapangan;
 use App\Models\Venue;
+use App\Models\Facility;
 use Illuminate\Http\Request;
 
 class LapanganController extends Controller
@@ -25,13 +26,14 @@ class LapanganController extends Controller
      * Show the form for creating a new resource.
      */
     public function create()
-    {
-        return view('admin.lapangan.create', [
-    'venues' => Venue::all(),
-    'heading' => 'Tambah Lapangan',
-    'title' => 'Tambah Lapangan'
-]);
-    }
+{
+    return view('admin.lapangan.create', [
+        'venues' => Venue::all(),
+        'facilities' => Facility::all(),
+        'heading' => 'Tambah Lapangan',
+        'title' => 'Tambah Lapangan'
+    ]);
+}
 
     /**
      * Store a newly created resource in storage.
@@ -99,15 +101,17 @@ class LapanganController extends Controller
      * Show the form for editing the specified resource.
      */
     public function edit($id)
-    {
-        $lapangan = Lapangan::findOrFail($id);
+{
+    $lapangan = Lapangan::findOrFail($id);
 
-        return view('admin.lapangan.edit', [
-            'lapangan' => $lapangan,
-            'title' => 'Edit Lapangan',
-'heading' => 'Edit Lapangan'
-        ]);
-    }
+    return view('admin.lapangan.edit', [
+        'lapangan' => $lapangan,
+        'venues' => Venue::all(),
+        'facilities' => Facility::all(),
+        'title' => 'Edit Lapangan',
+        'heading' => 'Edit Lapangan'
+    ]);
+}
 
     /**
      * Update the specified resource in storage.

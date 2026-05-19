@@ -1,10 +1,16 @@
 @extends('layouts.admin')
+
 @section('content')
+
 @php
-    $fallbackCourtImage = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22675%22 viewBox=%220 0 1200 675%22%3E%3Crect width=%221200%22 height=%22675%22 rx=%2236%22 fill=%22%23e9f7ec%22/%3E%3Crect x=%2260%22 y=%2260%22 width=%221080%22 height=%22555%22 rx=%2228%22 fill=%22%230fa741%22 opacity=%22.15%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2254%22 text-anchor=%22middle%22 fill=%22%230f6e31%22%3EPreview Lapangan%3C/text%3E%3C/svg%3E";
-    $defaultFacilities = ['Parkir motor','Toilet','Musholla','Jual minuman','Jual makanan','WiFi'];
+$fallbackCourtImage = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%22675%22 viewBox=%220 0 1200 675%22%3E%3Crect width=%221200%22 height=%22675%22 rx=%2236%22 fill=%22%23e9f7ec%22/%3E%3Crect x=%2260%22 y=%2260%22 width=%221080%22 height=%22555%22 rx=%2228%22 fill=%22%230fa741%22 opacity=%22.15%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2254%22 text-anchor=%22middle%22 fill=%22%230f6e31%22%3EPreview Lapangan%3C/text%3E%3C/svg%3E";
 @endphp
-<form class="form-card wide-form" action="{{ route('admin.courts.store') }}" method="POST" enctype="multipart/form-data">
+
+<form class="form-card wide-form"
+      action="{{ url('/lapangan') }}"
+      method="POST"
+      enctype="multipart/form-data">
+
     @csrf
     <div class="grid-2">
         <div class="form-group"><label>Nama Lapangan</label><input class="input-ui" name="nama" value="{{ old('nama') }}" placeholder="Contoh: Lapangan Futsal A"></div>
@@ -32,7 +38,52 @@
 
     <div class="form-group"><label>Deskripsi</label><textarea class="textarea-ui" name="deskripsi" placeholder="Deskripsi fasilitas lapangan">{{ old('deskripsi') }}</textarea></div>
 
-    <div class="form-group"><label>Fasilitas</label><div class="facility-checkboxes">@foreach($defaultFacilities as $facility)<label><input type="checkbox" name="fasilitas[]" value="{{ $facility }}" {{ in_array($facility, old('fasilitas', [])) ? 'checked' : '' }}> {{ $facility }}</label>@endforeach</div></div>
+    <div class="form-group">
+    <label>Fasilitas</label>
+
+    {{-- fasilitas tersimpan --}}
+    <div class="facility-checkboxes" id="facility-list">
+
+        @foreach($facilities as $facility)
+
+            <label class="facility-item">
+
+                <input
+                    type="checkbox"
+                    name="fasilitas[]"
+                    value="{{ $facility->name }}"
+                    {{ in_array($facility->name, old('fasilitas', [])) ? 'checked' : '' }}
+                >
+
+                {{ $facility->name }}
+
+            </label>
+
+        @endforeach
+
+    </div>
+
+    {{-- tambah fasilitas baru --}}
+    <div style="display:flex; gap:10px; margin-top:15px;">
+
+        <input
+            type="text"
+            id="newFacility"
+            class="input-ui"
+            placeholder="Tambah fasilitas baru..."
+        >
+
+        <button
+            type="button"
+            class="btn-ui btn-green"
+            onclick="addFacility()"
+        >
+            Tambah
+        </button>
+
+    </div>
+</div>
+
 
     <div class="form-group preview-shell"><label>Preview Foto Utama</label><img id="court-preview-image" class="preview-img" src="{{ $fallbackCourtImage }}" alt="Preview foto lapangan"></div>
     <div class="grid-2">
@@ -40,9 +91,61 @@
         <div class="form-group"><label>Slide Foto Tambahan</label><input class="input-ui" name="foto_gallery[]" type="file" accept="image/*" multiple></div>
     </div>
 
-    <div style="display:flex; gap:10px; justify-content:flex-end;">
-        <a class="btn-ui btn-gray" href="{{ route('admin.courts') }}">Batal</a>
-        <button class="btn-ui btn-green" type="submit">Simpan Lapangan</button>
-    </div>
+   <div style="display:flex; gap:10px; justify-content:flex-end;">
+
+    <a class="btn-ui btn-gray" href="{{ url('/lapangan') }}">
+        Batal
+    </a>
+
+    <button class="btn-ui btn-green" type="submit">
+        Simpan Lapangan
+    </button>
+
+</div>
 </form>
+<script>
+function addFacility() {
+
+    const input = document.getElementById('newFacility');
+    const list = document.getElementById('facility-list');
+
+    let value = input.value.trim();
+
+    if (value === '') {
+        return;
+    }
+
+    // cek duplikat
+    let exists = false;
+
+    document.querySelectorAll('#facility-list input').forEach(item => {
+        if (item.value.toLowerCase() === value.toLowerCase()) {
+            exists = true;
+        }
+    });
+
+    if (exists) {
+        alert('Fasilitas sudah ada');
+        return;
+    }
+
+    // buat checkbox baru
+    const label = document.createElement('label');
+    label.className = 'facility-item';
+
+    label.innerHTML = `
+        <input
+            type="checkbox"
+            name="fasilitas[]"
+            value="${value}"
+            checked
+        >
+        ${value}
+    `;
+
+    list.appendChild(label);
+
+    input.value = '';
+}
+</script>
 @endsection
