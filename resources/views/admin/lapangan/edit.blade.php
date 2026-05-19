@@ -33,7 +33,7 @@
         <div class="form-group"><label>Tambah Slide Foto</label><input class="input-ui" name="foto_gallery[]" type="file" accept="image/*" multiple></div>
     </div>
     <div style="display:flex; gap:10px; justify-content:flex-end;">
-        <a class="btn-ui btn-gray" href="{{ route('admin.courts') }}">Batal</a>
+        <a class="btn-ui btn-gray" href="{{ route('admin.courts') }}">Baatal</a>
         <button class="btn-ui btn-green" type="submit">Update</button>
     </div>
 </form>
