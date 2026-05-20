@@ -326,6 +326,8 @@ class AdminController extends Controller
         $this->layoutData($request, [
             'venues' => $venues,
             'facilities' => $facilities,
+            'title' => 'Tambah Lapangan',
+            'heading' => 'Tambah Lapangan',
         ])
     );
 }
@@ -366,6 +368,20 @@ class AdminController extends Controller
         return redirect()->route('admin.courts')->with('success', 'Lapangan berhasil ditambahkan.');
     }
 
+    public function courtShow(Request $request, Lapangan $lapangan): View
+{
+    $lapangan->load([
+        'venue',
+        'bookings.user',
+    ]);
+
+    return view('admin.lapangan.show', $this->layoutData($request, [
+        'lapangan' => $lapangan,
+        'title' => 'Detail Lapangan',
+        'heading' => 'Detail Lapangan',
+    ]));
+}
+
     public function courtEdit(Request $request, Lapangan $lapangan): View
 {
     $venues = Venue::where('status', 'Aktif')
@@ -379,6 +395,8 @@ class AdminController extends Controller
             'lapangan' => $lapangan,
             'venues' => $venues,
             'facilities' => $facilities,
+            'title' => 'Edit Lapangan',
+            'heading' => 'Edit Lapangan',
         ])
     );
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VenueController;
+use App\Http\Controllers\FacilityController;
 use App\Http\Middleware\CekLogin;
 use Illuminate\Support\Facades\Route;
 
@@ -31,12 +32,16 @@ Route::middleware([CekLogin::class, 'role:superadmin,admin'])
     });
 
     Route::get('/lapangan', [AdminController::class, 'courts'])->name('courts');
-    Route::get('/lapangan/create', [AdminController::class, 'courtCreate'])->name('courts.create');
-    Route::post('/lapangan', [AdminController::class, 'courtStore'])->name('courts.store');
-    Route::get('/lapangan/{lapangan}/edit', [AdminController::class, 'courtEdit'])->name('courts.edit');
-    Route::put('/lapangan/{lapangan}', [AdminController::class, 'courtUpdate'])->name('courts.update');
-    Route::delete('/lapangan/{lapangan}', [AdminController::class, 'courtDelete'])->name('courts.delete');
-    
+
+Route::get('/lapangan/create', [AdminController::class, 'courtCreate'])->name('courts.create');
+Route::post('/lapangan', [AdminController::class, 'courtStore'])->name('courts.store');
+
+Route::get('/lapangan/{lapangan}', [AdminController::class, 'courtShow'])->name('courts.show');
+
+Route::get('/lapangan/{lapangan}/edit', [AdminController::class, 'courtEdit'])->name('courts.edit');
+Route::put('/lapangan/{lapangan}', [AdminController::class, 'courtUpdate'])->name('courts.update');
+Route::delete('/lapangan/{lapangan}', [AdminController::class, 'courtDelete'])->name('courts.delete');
+
     Route::resource('venue', VenueController::class);
 
     Route::resource('facilities', FacilityController::class);

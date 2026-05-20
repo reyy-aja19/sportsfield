@@ -76,6 +76,25 @@
     </div>
 
     <div class="form-group">
+    <label>Link Google Maps</label>
+
+    <input type="url"
+           name="google_maps"
+           class="input-ui"
+           value="{{ old('google_maps', $venue->google_maps ?? '') }}"
+           placeholder="https://maps.google.com/...">
+</div>
+
+    <div class="form-group">
+    <label>Embed Google Maps</label>
+
+    <textarea name="map_embed"
+              class="textarea-ui"
+              rows="5"
+              placeholder="<iframe ...></iframe>">{{ old('map_embed', $venue->map_embed ?? '') }}</textarea>
+</div>
+
+    <div class="form-group">
         <label>Deskripsi</label>
 
         <textarea name="description"

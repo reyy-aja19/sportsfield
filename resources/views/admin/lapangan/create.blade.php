@@ -7,7 +7,7 @@ $fallbackCourtImage = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000
 @endphp
 
 <form class="form-card wide-form"
-      action="{{ url('/lapangan') }}"
+      action="{{ url('/admin/lapangan') }}"
       method="POST"
       enctype="multipart/form-data">
 
@@ -93,7 +93,7 @@ $fallbackCourtImage = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000
 
    <div style="display:flex; gap:10px; justify-content:flex-end;">
 
-    <a class="btn-ui btn-gray" href="{{ url('/lapangan') }}">
+    <a class="btn-ui btn-gray" href="{{ url('/admin/lapangan') }}">
         Batal
     </a>
 

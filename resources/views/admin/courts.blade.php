@@ -53,12 +53,34 @@
             </div>
 
             <div class="btn-col">
-                <a class="btn-ui btn-green" href="{{ route('admin.courts.edit', $court) }}"><i class="fa-solid fa-pen"></i> Edit</a>
-                <form method="POST" action="{{ route('admin.courts.delete', $court) }}" onsubmit="return confirm('Hapus lapangan ini?')">
-                    @csrf @method('DELETE')
-                    <button class="btn-ui btn-red" type="submit"><i class="fa-solid fa-trash"></i> Hapus</button>
-                </form>
-            </div>
+
+    <a class="btn-ui btn-green"
+       href="{{ route('admin.courts.show', $court) }}">
+        <i class="fa-solid fa-eye"></i>
+        Detail
+    </a>
+
+    <a class="btn-ui btn-yellow"
+       href="{{ route('admin.courts.edit', $court) }}">
+        <i class="fa-solid fa-pen"></i>
+        Edit
+    </a>
+
+    <form method="POST"
+          action="{{ route('admin.courts.delete', $court) }}"
+          onsubmit="return confirm('Hapus lapangan ini?')">
+
+        @csrf
+        @method('DELETE')
+
+        <button class="btn-ui btn-red" type="submit">
+            <i class="fa-solid fa-trash"></i>
+            Hapus
+        </button>
+
+    </form>
+
+</div>
         </div>
     @empty
         <div class="center-box">Belum ada data lapangan.</div>

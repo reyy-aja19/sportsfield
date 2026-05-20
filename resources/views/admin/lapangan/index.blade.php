@@ -89,35 +89,35 @@
 
                     <span>
                         <i class="fa-solid fa-location-dot"></i>
-                        {{ $l->venue->name ?? '-' }}
+                        {{ $l->venue->nama ?? '-' }}
                     </span>
 
                 </div>
 
             </div>
 
-            <div class="court-actions">
+           <div class="court-actions">
 
-                <a href="/lapangan/{{ $l->id }}/edit"
-                   class="btn-ui warning">
-                    <i class="fa-solid fa-pen"></i>
-                    Edit
-                </a>
+    <a href="{{ route('admin.courts.edit', $l->id) }}"
+       class="btn-ui warning">
+        <i class="fa-solid fa-pen"></i>
+        Edit
+    </a>
 
-                <form action="/lapangan/{{ $l->id }}"
-                      method="POST">
+    <form action="{{ route('admin.courts.delete', $l->id) }}"
+          method="POST">
 
-                    @csrf
-                    @method('DELETE')
+        @csrf
+        @method('DELETE')
 
-                    <button class="btn-ui danger">
-                        <i class="fa-solid fa-trash"></i>
-                        Hapus
-                    </button>
+        <button class="btn-ui danger">
+            <i class="fa-solid fa-trash"></i>
+            Hapus
+        </button>
 
-                </form>
+    </form>
 
-            </div>
+</div>
 
         </div>
 

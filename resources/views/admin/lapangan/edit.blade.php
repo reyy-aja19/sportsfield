@@ -9,6 +9,7 @@
     @csrf
     @method('PUT')
     <div class="grid-2">
+        <div class="form-group"><label>Nama Lapangan</label><input class="input-ui" name="nama" value="{{ old('nama', $lapangan->nama) }}"></div>
         <div class="form-group">
     <label>Venue</label>
 
@@ -23,7 +24,6 @@
 
     </select>
 </div>
-        <div class="form-group"><label>Nama Lapangan</label><input class="input-ui" name="nama" value="{{ old('nama', $lapangan->nama) }}"></div>
         <div class="form-group"><label>Jenis Olahraga</label><select class="select-ui" name="jenis">@foreach(['Badminton','Futsal','Basket','Voli'] as $jenis)<option value="{{ $jenis }}" {{ old('jenis', $lapangan->jenis) === $jenis ? 'selected' : '' }}>{{ $jenis }}</option>@endforeach</select></div>
         <div class="form-group"><label>Lokasi</label><input class="input-ui" name="lokasi" value="{{ old('lokasi', $lapangan->lokasi) }}"></div>
         <div class="form-group"><label>Harga per Jam</label><input class="input-ui" name="harga" type="number" value="{{ old('harga', $lapangan->harga) }}"></div>

@@ -36,7 +36,11 @@ class VenueController extends Controller
         'email' => 'nullable|email',
         'description' => 'nullable',
         'status' => 'required',
-        'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp'
+        'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp',
+
+        // maps
+        'google_maps' => 'nullable|url',
+        'map_embed' => 'nullable|string'
     ]);
 
     if ($request->hasFile('photo')) {
@@ -76,7 +80,11 @@ class VenueController extends Controller
         'email' => 'nullable|email',
         'description' => 'nullable',
         'status' => 'required',
-        'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp'
+        'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp',
+
+        // maps
+        'google_maps' => 'nullable|url',
+        'map_embed' => 'nullable|string'
     ]);
 
     if ($request->hasFile('photo')) {
@@ -92,7 +100,8 @@ class VenueController extends Controller
 
     $venue->update($data);
 
-    return redirect()->route('admin.venue.index')
+    return redirect()
+        ->route('admin.venue.index')
         ->with('success', 'Venue berhasil diupdate');
 }
 
@@ -103,4 +112,13 @@ class VenueController extends Controller
         return redirect()->route('admin.venue.index')
             ->with('success', 'Venue berhasil dihapus');
     }
+
+    public function show(Venue $venue)
+{
+    return view('admin.venue.show', [
+        'venue' => $venue,
+        'heading' => 'Detail Venue',
+        'title' => 'Detail Venue'
+    ]);
+}
 }

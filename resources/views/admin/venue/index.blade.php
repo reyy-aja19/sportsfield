@@ -63,31 +63,39 @@
 
                 <div class="court-actions">
 
-                    <a
-                        href="{{ route('admin.venue.edit', $v->id) }}"
-                        class="btn-ui warning"
-                    >
-                        <i class="fa-solid fa-pen"></i>
-                        Edit
-                    </a>
+    <a href="{{ route('admin.venue.show', $v->id) }}"
+       class="btn-ui success">
 
-                    <form
-                        action="{{ route('admin.venue.destroy', $v->id) }}"
-                        method="POST"
-                        onsubmit="return confirm('Hapus venue ini?')"
-                    >
+        <i class="fa-solid fa-eye"></i>
+        Detail
 
-                        @csrf
-                        @method('DELETE')
+    </a>
 
-                        <button type="submit" class="btn-ui danger">
-                            <i class="fa-solid fa-trash"></i>
-                            Hapus
-                        </button>
+    <a
+        href="{{ route('admin.venue.edit', $v->id) }}"
+        class="btn-ui warning"
+    >
+        <i class="fa-solid fa-pen"></i>
+        Edit
+    </a>
 
-                    </form>
+    <form
+        action="{{ route('admin.venue.destroy', $v->id) }}"
+        method="POST"
+        onsubmit="return confirm('Hapus venue ini?')"
+    >
 
-                </div>
+        @csrf
+        @method('DELETE')
+
+        <button type="submit" class="btn-ui danger">
+            <i class="fa-solid fa-trash"></i>
+            Hapus
+        </button>
+
+    </form>
+
+</div>
 
             </div>
 
