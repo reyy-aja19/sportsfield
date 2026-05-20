@@ -125,7 +125,7 @@ jobs:
 
             echo "✅ MySQL ready"
 
-            # Migration
-            docker compose exec -T app php artisan migrate --force --no-interaction
+            # Migration + Seeder
+            docker compose exec -T app php artisan migrate --seed --force --no-interaction
 
             echo "✅ Deployment selesai!"
