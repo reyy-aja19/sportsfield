@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -148,8 +149,18 @@ class AdminController extends Controller
 
     public function dashboard(Request $request): View
 {
+    $driver = DB::connection()->getDriverName();
+
+    $monthSql = $driver === 'sqlite'
+        ? "strftime('%m', created_at)"
+        : "MONTH(created_at)";
+
+    $bookingMonthSql = $driver === 'sqlite'
+        ? "strftime('%m', booking_date)"
+        : "MONTH(booking_date)";
+
     $revenuePerMonth = Payment::selectRaw("
-            MONTH(created_at) as month,
+            {$monthSql} as month,
             SUM(amount) as total
         ")
         ->where('status', 'Lunas')
@@ -157,29 +168,29 @@ class AdminController extends Controller
         ->pluck('total', 'month');
 
     $bookingPerMonth = Booking::selectRaw("
-            MONTH(booking_date) as month,
+            {$bookingMonthSql} as month,
             COUNT(*) as total
         ")
         ->groupBy('month')
         ->pluck('total', 'month');
 
     $userPerMonth = User::selectRaw("
-            MONTH(created_at) as month,
+            {$monthSql} as month,
             COUNT(*) as total
         ")
         ->where('role', 'user')
         ->groupBy('month')
         ->pluck('total', 'month');
 
-    $months = [1, 2, 3, 4, 5];
+    $months = ['01', '02', '03', '04', '05'];
 
     return view('admin.dashboard', $this->layoutData($request, [
 
         'totalVenue' => Venue::count(),
 
         'lapangan' => Lapangan::latest()
-    ->take(6)
-    ->get(),
+            ->take(6)
+            ->get(),
 
         'stats' => [
             [

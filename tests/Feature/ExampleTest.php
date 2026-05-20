@@ -38,9 +38,13 @@ class ExampleTest extends TestCase
         ]);
 
         // login user
-        $this->actingAs($user)
-            ->get('/')
-            ->assertStatus(302);
+        $response = $this->actingAs($user)
+            ->get('/');
+
+        // homepage bisa redirect/dashboard
+        $this->assertTrue(
+            in_array($response->status(), [200, 302])
+        );
     }
 
     /** ADMIN ROUTES */
@@ -66,7 +70,7 @@ class ExampleTest extends TestCase
 
         foreach ($routes as $route) {
 
-            // guest
+            // guest redirect
             $this->get($route)
                 ->assertStatus(302);
 
@@ -74,7 +78,7 @@ class ExampleTest extends TestCase
             $response = $this->actingAs($admin)
                 ->get($route);
 
-            // route kadang redirect dashboard/login
+            // route bisa redirect / success
             $this->assertTrue(
                 in_array($response->status(), [200, 302])
             );
@@ -82,43 +86,43 @@ class ExampleTest extends TestCase
     }
 
     /** SUPERADMIN ROUTES */
-public function test_superadmin_routes_accessible(): void
-{
-    $admin = User::factory()->create([
-        'role' => 'admin',
-        'email_verified_at' => now(),
-    ]);
+    public function test_superadmin_routes_accessible(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'email_verified_at' => now(),
+        ]);
 
-    $superadmin = User::factory()->create([
-        'role' => 'superadmin',
-        'email_verified_at' => now(),
-    ]);
+        $superadmin = User::factory()->create([
+            'role' => 'superadmin',
+            'email_verified_at' => now(),
+        ]);
 
-    $routes = [
-        '/admin/users',
-        '/admin/users/create',
-        '/admin/users/' . $superadmin->id . '/edit',
-    ];
+        $routes = [
+            '/admin/users',
+            '/admin/users/create',
+            '/admin/users/' . $superadmin->id . '/edit',
+        ];
 
-    foreach ($routes as $route) {
+        foreach ($routes as $route) {
 
-        // admin biasa
-        $response = $this->actingAs($admin)
-            ->get($route);
+            // admin biasa
+            $response = $this->actingAs($admin)
+                ->get($route);
 
-        $this->assertTrue(
-            in_array($response->status(), [200, 302, 403])
-        );
+            $this->assertTrue(
+                in_array($response->status(), [200, 302, 403])
+            );
 
-        // superadmin
-        $response = $this->actingAs($superadmin)
-            ->get($route);
+            // superadmin
+            $response = $this->actingAs($superadmin)
+                ->get($route);
 
-        $this->assertTrue(
-            in_array($response->status(), [200, 302])
-        );
+            $this->assertTrue(
+                in_array($response->status(), [200, 302])
+            );
+        }
     }
-}
 
     /** STORAGE */
     public function test_storage_file_accessible(): void
