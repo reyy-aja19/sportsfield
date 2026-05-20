@@ -26,7 +26,7 @@
 </div>
         <div class="form-group"><label>Jenis Olahraga</label><select class="select-ui" name="jenis">@foreach(['Badminton','Futsal','Basket','Voli'] as $jenis)<option value="{{ $jenis }}" {{ old('jenis', $lapangan->jenis) === $jenis ? 'selected' : '' }}>{{ $jenis }}</option>@endforeach</select></div>
         <div class="form-group"><label>Lokasi</label><input class="input-ui" name="lokasi" value="{{ old('lokasi', $lapangan->lokasi) }}"></div>
-        <div class="form-group"><label>Harga per jam</label><input class="input-ui" name="harga" type="number" value="{{ old('harga', $lapangan->harga) }}"></div>
+        <div class="form-group"><label>Harga per Jam</label><input class="input-ui" name="harga" type="number" value="{{ old('harga', $lapangan->harga) }}"></div>
         <div class="form-group"><label>Rating</label><input class="input-ui" name="rating" type="number" min="0" max="5" step="0.1" value="{{ old('rating', $lapangan->rating) }}"></div>
         <div class="form-group"><label>Status</label><select class="select-ui" name="status">@foreach(['Tersedia','Perawatan','Penuh'] as $status)<option value="{{ $status }}" {{ old('status', $lapangan->status) === $status ? 'selected' : '' }}>{{ $status }}</option>@endforeach</select></div>
     </div>
