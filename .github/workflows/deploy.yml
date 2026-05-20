@@ -116,8 +116,14 @@ jobs:
             # Jalankan container
             docker compose up -d --remove-orphans
 
-            # Tunggu container ready
-            sleep 10
+            echo "⏳ Menunggu MySQL ready..."
+
+            # Tunggu MySQL sampai benar-benar siap
+            until docker compose exec -T db mysqladmin ping -h"localhost" --silent; do
+              sleep 5
+            done
+
+            echo "✅ MySQL ready"
 
             # Migration
             docker compose exec -T app php artisan migrate --force --no-interaction
