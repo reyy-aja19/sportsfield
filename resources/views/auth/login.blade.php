@@ -24,17 +24,32 @@
             @endif
 
             <form action="{{ route('login.submit') }}" method="POST">
-                @csrf
-                <div class="form-group" style="text-align:left;">
-                    <label>Email Admin</label>
-                    <input class="input-ui" type="email" name="email" value="{{ old('email', 'admin@gmail.com') }}">
-                </div>
-                <div class="form-group" style="text-align:left;">
-                    <label>Password</label>
-                    <input class="input-ui" type="password" name="password" value="admin123">
-                </div>
-                <button class="btn-ui btn-green login-btn" type="submit">Masuk ke Dashboard</button>
-            </form>
+    @csrf
+
+    <div class="form-group" style="text-align:left;">
+        <label>Email Admin</label>
+        <input 
+            class="input-ui"
+            type="email"
+            name="email"
+            placeholder="Masukkan email"
+            autocomplete="off">
+    </div>
+
+    <div class="form-group" style="text-align:left;">
+        <label>Password</label>
+        <input 
+            class="input-ui"
+            type="password"
+            name="password"
+            placeholder="Masukkan password"
+            autocomplete="off">
+    </div>
+
+    <button class="btn-ui btn-green login-btn" type="submit">
+        Masuk ke Dashboard
+    </button>
+</form>
         </div>
     </div>
 </body>

@@ -68,6 +68,9 @@ Route::delete('/lapangan/{lapangan}', [AdminController::class, 'courtDelete'])->
     Route::put('/rewards/{reward}', [AdminController::class, 'rewardUpdate'])->name('rewards.update');
     Route::post('/rewards/{reward}/toggle', [AdminController::class, 'rewardToggle'])->name('rewards.toggle');
     Route::delete('/rewards/{reward}', [AdminController::class, 'rewardDelete'])->name('rewards.delete');
+    Route::post('/reward/{reward}/redeem',
+    [AdminController::class, 'redeemReward']
+)->name('reward.redeem');
 
     Route::get('/payments', [AdminController::class, 'payments'])->name('payments');
     Route::post('/payments/{payment}/verify', [AdminController::class, 'paymentVerify'])->name('payments.verify');

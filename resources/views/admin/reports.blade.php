@@ -1,55 +1,204 @@
 @extends('layouts.admin', ['title' => 'Export Laporan', 'heading' => 'Export Laporan'])
+
 @section('content')
-<form class="form-card" method="GET" action="{{ route('admin.reports') }}">
-    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px;">
-        <div>
-            <h2 style="margin:0;color:#0f2f1b;">Export Laporan Booking & Pembayaran</h2>
-            <p style="margin:6px 0 0;color:#667085;">Gunakan filter di bawah, lalu unduh laporan hanya dari menu ini dalam format CSV atau Excel.</p>
+
+<div class="surface">
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+            <a
+                class="btn-ui btn-green anim-click"
+                href="{{ route('admin.reports.export.csv', request()->query()) }}">
+
+                <i class="fa-solid fa-file-csv"></i>
+                Export CSV
+            </a>
+
+            <a
+                class="btn-ui btn-green anim-click"
+                href="{{ route('admin.reports.export.excel', request()->query()) }}">
+
+                <i class="fa-solid fa-file-excel"></i>
+                Export Excel
+            </a>
+
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <a class="btn-ui btn-green anim-click" href="{{ route('admin.reports.export.csv', request()->query()) }}"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
-            <a class="btn-ui btn-green anim-click" href="{{ route('admin.reports.export.excel', request()->query()) }}"><i class="fa-solid fa-file-excel"></i> Export Excel</a>
-        </div>
+
     </div>
 
-    <div class="form-group">
-        <label>Rentang Tanggal</label>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <input class="input-ui" type="date" name="from" value="{{ $filters['from'] }}">
-            <input class="input-ui" type="date" name="to" value="{{ $filters['to'] }}">
-        </div>
-    </div>
-    <div class="form-group">
-        <label>Status Transaksi</label>
-        <select class="select-ui" name="type">
-            @foreach(['Semua Transaksi','Lunas','Menunggu'] as $type)
-            <option value="{{ $type }}" {{ $filters['type'] === $type ? 'selected' : '' }}>{{ $type }}</option>
-            @endforeach
-        </select>
-    </div>
-    <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
-        <a class="btn-ui btn-gray" href="{{ route('admin.reports') }}">Reset</a>
-        <button class="btn-ui btn-green">Terapkan Filter</button>
-    </div>
+    {{-- FILTER --}}
+    <form method="GET" action="{{ route('admin.reports') }}">
 
-    <div class="data-table mt-16">
+        <div class="grid-3" style="margin-bottom:20px;">
+
+            <div class="form-group">
+                <label>Dari Tanggal</label>
+
+                <input
+                    class="input-ui"
+                    type="date"
+                    name="from"
+                    value="{{ $filters['from'] }}">
+            </div>
+
+            <div class="form-group">
+                <label>Sampai Tanggal</label>
+
+                <input
+                    class="input-ui"
+                    type="date"
+                    name="to"
+                    value="{{ $filters['to'] }}">
+            </div>
+
+            <div class="form-group">
+                <label>Status Transaksi</label>
+
+                <select class="select-ui" name="type">
+
+                    @foreach(['Semua Transaksi', 'Lunas', 'Menunggu', 'DP'] as $type)
+
+                        <option
+                            value="{{ $type }}"
+                            {{ $filters['type'] === $type ? 'selected' : '' }}>
+
+                            {{ $type }}
+
+                        </option>
+
+                    @endforeach
+
+                </select>
+            </div>
+
+        </div>
+
+        {{-- ACTION BUTTON --}}
+        <div style="
+            display:flex;
+            justify-content:flex-end;
+            gap:10px;
+            flex-wrap:wrap;
+            margin-bottom:20px;
+        ">
+
+            <a
+                class="btn-ui btn-gray"
+                href="{{ route('admin.reports') }}">
+
+                Reset
+            </a>
+
+            <button class="btn-ui btn-green">
+
+                <i class="fa-solid fa-filter"></i>
+                Terapkan Filter
+
+            </button>
+
+        </div>
+
+    </form>
+
+    {{-- TABLE --}}
+    <div class="data-table">
+
         <table>
-            <thead><tr><th>Tanggal</th><th>User</th><th>Lapangan</th><th>Metode</th><th>Jumlah</th><th>Status</th></tr></thead>
-            <tbody>
-                @forelse($reports as $report)
+
+            <thead>
+
                 <tr>
-                    <td>{{ optional($report->created_at)->format('d M Y') }}</td>
-                    <td>{{ $report->user?->name ?? '-' }}</td>
-                    <td>{{ $report->booking?->lapangan?->nama ?? '-' }}</td>
-                    <td>{{ $report->method ?? '-' }}</td>
-                    <td>Rp {{ number_format($report->amount,0,',','.') }}</td>
-                    <td>{{ $report->status }}</td>
+                    <th>No</th>
+                    <th>Tanggal</th>
+                    <th>User</th>
+                    <th>Lapangan</th>
+                    <th>Metode</th>
+                    <th>Total</th>
+                    <th>Status</th>
                 </tr>
+
+            </thead>
+
+            <tbody>
+
+                @forelse($reports as $i => $report)
+
+                <tr>
+
+                    <td>
+                        {{ $i + 1 }}
+                    </td>
+
+                    <td>
+                        {{ optional($report->created_at)->format('d M Y H:i') }}
+                    </td>
+
+                    <td>
+                        {{ $report->user?->name ?? '-' }}
+                    </td>
+
+                    <td>
+                        {{ $report->booking?->lapangan?->nama ?? '-' }}
+                    </td>
+
+                    <td>
+                        {{ $report->method ?? '-' }}
+                    </td>
+
+                    <td>
+                        Rp {{ number_format($report->amount, 0, ',', '.') }}
+                    </td>
+
+                    <td>
+
+                        @if($report->status === 'Lunas')
+
+                            <span class="status-active">
+                                Lunas
+                            </span>
+
+                        @elseif($report->status === 'DP')
+
+                            <span class="status-pending">
+                                DP
+                            </span>
+
+                        @else
+
+                            <span class="status-inactive">
+                                Menunggu
+                            </span>
+
+                        @endif
+
+                    </td>
+
+                </tr>
+
                 @empty
-                <tr><td colspan="6" style="text-align:center;color:#667085;padding:24px;">Belum ada data laporan.</td></tr>
+
+                <tr>
+
+                    <td colspan="7" style="
+                        text-align:center;
+                        padding:30px;
+                        color:#667085;
+                    ">
+
+                        Belum ada data laporan.
+
+                    </td>
+
+                </tr>
+
                 @endforelse
+
             </tbody>
+
         </table>
+
     </div>
-</form>
+
+</div>
+
 @endsection

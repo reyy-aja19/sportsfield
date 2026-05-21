@@ -1,7 +1,6 @@
 @extends('layouts.admin', ['title' => 'Manajemen Lapangan', 'heading' => 'Management Lapangan'])
 @section('content')
 <div class="section-actions">
-    <div class="muted">Total lapangan: {{ $courts->count() }}</div>
     <a class="btn-ui btn-green" href="{{ route('admin.courts.create') }}"><i class="fa-solid fa-plus"></i> Tambah Lapangan</a>
 </div>
 

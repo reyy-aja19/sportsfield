@@ -10,12 +10,13 @@ class Redemption extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'reward_id',
-        'redeemed_at',
-        'qr_code',
-        'status',
-    ];
+    'user_id',
+    'reward_id',
+    'redeemed_at',
+    'qr_code',
+    'redeem_code',
+    'status',
+];
 
     protected function casts(): array
     {

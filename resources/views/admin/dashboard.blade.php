@@ -187,16 +187,16 @@
 
             <div class="center-box highlight">
                 <h2 style="font-size:28px;">
-                    Belum Ada Venue
+                    Belum Ada Lapangan
                 </h2>
 
                 <p style="color:#5e7767;">
-                    Tambahkan venue pertama untuk mulai menerima booking.
+                    Tambahkan Lapangan pertama untuk mulai menerima booking.
                 </p>
 
                 <a href="{{ route('admin.courts.create') }}" class="btn-ui btn-green">
                     <i class="fa-solid fa-plus"></i>
-                    Tambah Venue
+                    Tambah Lapangan
                 </a>
             </div>
 

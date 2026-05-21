@@ -4,8 +4,6 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
 
-    <p>Total venue: {{ $venues->count() }}</p>
-
     <a href="{{ route('admin.venue.create') }}" class="btn-ui success">
         <i class="fa-solid fa-plus"></i>
         Tambah Venue

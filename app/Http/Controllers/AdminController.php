@@ -18,14 +18,22 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class AdminController extends Controller
 {
     private function adminUser(Request $request): ?User
-    {
-        return User::find($request->session()->get('admin_user_id'));
+{
+    $adminId = $request->session()->get('admin_user_id');
+
+    if (!$adminId) {
+        return null;
     }
+
+    return User::find($adminId);
+}
 
     private function publicUpload(Request $request, string $field, string $folder): ?string
     {
@@ -149,18 +157,8 @@ class AdminController extends Controller
 
     public function dashboard(Request $request): View
 {
-    $driver = DB::connection()->getDriverName();
-
-    $monthSql = $driver === 'sqlite'
-        ? "strftime('%m', created_at)"
-        : "MONTH(created_at)";
-
-    $bookingMonthSql = $driver === 'sqlite'
-        ? "strftime('%m', booking_date)"
-        : "MONTH(booking_date)";
-
     $revenuePerMonth = Payment::selectRaw("
-            {$monthSql} as month,
+            MONTH(created_at) as month,
             SUM(amount) as total
         ")
         ->where('status', 'Lunas')
@@ -168,21 +166,21 @@ class AdminController extends Controller
         ->pluck('total', 'month');
 
     $bookingPerMonth = Booking::selectRaw("
-            {$bookingMonthSql} as month,
+            MONTH(booking_date) as month,
             COUNT(*) as total
         ")
         ->groupBy('month')
         ->pluck('total', 'month');
 
     $userPerMonth = User::selectRaw("
-            {$monthSql} as month,
+            MONTH(created_at) as month,
             COUNT(*) as total
         ")
         ->where('role', 'user')
         ->groupBy('month')
         ->pluck('total', 'month');
 
-    $months = ['01', '02', '03', '04', '05'];
+    $months = range(1, 12);
 
     return view('admin.dashboard', $this->layoutData($request, [
 
@@ -623,10 +621,11 @@ class AdminController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'points_required' => ['required', 'numeric', 'min:0'],
-            'badge' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string'],
             'image' => ['nullable', 'image', 'max:4096'],
+            'stock' => ['required', 'integer', 'min:0'],
+            'expired_at' => ['nullable', 'date'],
         ]);
         if ($request->hasFile('image')) {
             $data['image'] = $this->publicUpload($request, 'image', 'rewards');
@@ -645,10 +644,11 @@ class AdminController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'points_required' => ['required', 'numeric', 'min:0'],
-            'badge' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string'],
             'image' => ['nullable', 'image', 'max:4096'],
+            'stock' => ['required', 'integer', 'min:0'],
+            'expired_at' => ['nullable', 'date'],
         ]);
 
         if ($request->hasFile('image')) {
@@ -672,6 +672,47 @@ class AdminController extends Controller
         $reward->delete();
         return back()->with('success', 'Reward berhasil dihapus.');
     }
+
+    public function redeemReward(Request $request, Reward $reward): RedirectResponse
+{
+    $user = User::find($request->session()->get('admin_user_id'));
+
+    // cek reward aktif
+    if ($reward->status !== 'Aktif') {
+        return back()->with('error', 'Reward tidak aktif');
+    }
+
+    // cek stok
+    if ($reward->stock <= 0) {
+        return back()->with('error', 'Stok reward habis');
+    }
+
+    // cek poin user
+    if ($user->points < $reward->points_required) {
+        return back()->with('error', 'Poin tidak cukup');
+    }
+
+    DB::transaction(function () use ($user, $reward) {
+
+        // kurangi poin user
+        $user->decrement('points', $reward->points_required);
+
+        // kurangi stok reward
+        $reward->decrement('stock');
+
+        // buat redemption
+        Redemption::create([
+    'user_id' => $user->id,
+    'reward_id' => $reward->id,
+    'redeemed_at' => now(),
+    'qr_code' => strtoupper(Str::random(10)),
+    'redeem_code' => 'RDM-' . strtoupper(Str::random(6)),
+    'status' => 'Pending',
+]);
+    });
+
+    return back()->with('success', 'Reward berhasil diredeem');
+}
 
     public function payments(Request $request): View
     {
