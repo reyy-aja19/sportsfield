@@ -18,21 +18,137 @@
             </div>
         </div>
         <nav class="sidebar-nav">
-            <a class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}"><span class="menu-icon"><i class="fa-solid fa-table-cells-large"></i></span><span class="label">Dashboard</span></a>
-            <a class="sidebar-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}"><span class="menu-icon"><i class="fa-solid fa-circle-user"></i></span><span class="label">Management User</span></a>
-            <a class="sidebar-link {{ request()->routeIs('admin.venue.*') ? 'active' : '' }}" href="{{ route('admin.venue.index') }}">
-    <span class="menu-icon"><i class="fa-solid fa-building"></i></span>
-    <span class="label">Management Venue</span>
-</a>
-            <a class="sidebar-link {{ request()->routeIs('admin.courts*') ? 'active' : '' }}" href="{{ route('admin.courts') }}"><span class="menu-icon"><i class="fa-solid fa-vector-square"></i></span><span class="label">Management Lapangan</span></a>
-                        <a class="sidebar-link {{ request()->routeIs('admin.openmatches*') ? 'active' : '' }}" href="{{ route('admin.openmatches') }}"><span class="menu-icon"><i class="fa-solid fa-users-line"></i></span><span class="label">Open Match</span></a>
-            <a class="sidebar-link {{ request()->routeIs('admin.reviews*') ? 'active' : '' }}" href="{{ route('admin.reviews') }}"><span class="menu-icon"><i class="fa-regular fa-message"></i></span><span class="label">Review Komentar</span>@if(($pendingReviewCount ?? 0) > 0)<span class="menu-badge">{{ $pendingReviewCount }}</span>@endif</a>
-            <a class="sidebar-link {{ request()->routeIs('admin.rewards*') ? 'active' : '' }}" href="{{ route('admin.rewards') }}"><span class="menu-icon"><i class="fa-solid fa-gift"></i></span><span class="label">Poin Penukaran</span></a>
-            <a class="sidebar-link {{ request()->routeIs('admin.payments*') ? 'active' : '' }}" href="{{ route('admin.payments') }}"><span class="menu-icon"><i class="fa-solid fa-wallet"></i></span><span class="label">Pembayaran</span>@if(($pendingPaymentCount ?? 0) > 0)<span class="menu-badge">{{ $pendingPaymentCount }}</span>@endif</a>
-            <a class="sidebar-link {{ request()->routeIs('admin.reports*') ? 'active' : '' }}" href="{{ route('admin.reports') }}"><span class="menu-icon"><i class="fa-regular fa-file-lines"></i></span><span class="label">Export Laporan</span></a>
-            <a class="sidebar-link {{ request()->routeIs('admin.profile*') ? 'active' : '' }}" href="{{ route('admin.profile') }}"><span class="menu-icon"><i class="fa-regular fa-id-card"></i></span><span class="label">Profil</span></a>
-            <a class="sidebar-link logout {{ request()->routeIs('admin.logout') ? 'active' : '' }}" href="{{ route('admin.logout') }}"><span class="menu-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></span><span class="label">Log Out</span></a>
-        </nav>
+
+    {{-- DASHBOARD --}}
+    <a class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
+       href="{{ route('admin.dashboard') }}">
+        <span class="menu-icon">
+            <i class="fa-solid fa-table-cells-large"></i>
+        </span>
+        <span class="label">Dashboard</span>
+    </a>
+
+    {{-- KHUSUS SUPER ADMIN --}}
+    @if($adminUser->role === 'superadmin')
+
+        {{-- MANAGEMENT USER --}}
+        <a class="sidebar-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}"
+           href="{{ route('admin.users') }}">
+            <span class="menu-icon">
+                <i class="fa-solid fa-circle-user"></i>
+            </span>
+            <span class="label">Management User</span>
+        </a>
+
+        {{-- MANAGEMENT ADMIN --}}
+        <a class="sidebar-link {{ request()->routeIs('admin.admins*') ? 'active' : '' }}"
+           href="{{ route('admin.requests') }}">
+            <span class="menu-icon">
+                <i class="fa-solid fa-user-shield"></i>
+            </span>
+            <span class="label">Management Admin</span>
+        </a>
+
+    @endif
+
+    {{-- MENU ADMIN & SUPERADMIN --}}
+    
+    {{-- VENUE --}}
+    <a class="sidebar-link {{ request()->routeIs('admin.venue.*') ? 'active' : '' }}"
+       href="{{ route('admin.venue.index') }}">
+        <span class="menu-icon">
+            <i class="fa-solid fa-building"></i>
+        </span>
+        <span class="label">Management Venue</span>
+    </a>
+
+    {{-- LAPANGAN --}}
+    <a class="sidebar-link {{ request()->routeIs('admin.courts*') ? 'active' : '' }}"
+       href="{{ route('admin.courts') }}">
+        <span class="menu-icon">
+            <i class="fa-solid fa-vector-square"></i>
+        </span>
+        <span class="label">Management Lapangan</span>
+    </a>
+
+    {{-- OPEN MATCH --}}
+    <a class="sidebar-link {{ request()->routeIs('admin.openmatches*') ? 'active' : '' }}"
+       href="{{ route('admin.openmatches') }}">
+        <span class="menu-icon">
+            <i class="fa-solid fa-users-line"></i>
+        </span>
+        <span class="label">Open Match</span>
+    </a>
+
+    {{-- REVIEW --}}
+    <a class="sidebar-link {{ request()->routeIs('admin.reviews*') ? 'active' : '' }}"
+       href="{{ route('admin.reviews') }}">
+        <span class="menu-icon">
+            <i class="fa-regular fa-message"></i>
+        </span>
+
+        <span class="label">Review Komentar</span>
+
+        @if(($pendingReviewCount ?? 0) > 0)
+            <span class="menu-badge">
+                {{ $pendingReviewCount }}
+            </span>
+        @endif
+    </a>
+
+    {{-- REWARD --}}
+    <a class="sidebar-link {{ request()->routeIs('admin.rewards*') ? 'active' : '' }}"
+       href="{{ route('admin.rewards') }}">
+        <span class="menu-icon">
+            <i class="fa-solid fa-gift"></i>
+        </span>
+        <span class="label">Poin Penukaran</span>
+    </a>
+
+    {{-- PAYMENT --}}
+    <a class="sidebar-link {{ request()->routeIs('admin.payments*') ? 'active' : '' }}"
+       href="{{ route('admin.payments') }}">
+        <span class="menu-icon">
+            <i class="fa-solid fa-wallet"></i>
+        </span>
+
+        <span class="label">Pembayaran</span>
+
+        @if(($pendingPaymentCount ?? 0) > 0)
+            <span class="menu-badge">
+                {{ $pendingPaymentCount }}
+            </span>
+        @endif
+    </a>
+    
+    {{-- EXPORT --}}
+      <a class="sidebar-link {{ request()->routeIs('admin.reports*') ? 'active' : '' }}"
+         href="{{ route('admin.reports') }}">
+          <span class="menu-icon">
+              <i class="fa-regular fa-file-lines"></i>
+          </span>
+          <span class="label">Export Laporan</span>
+      </a>
+
+    {{-- PROFILE --}}
+    <a class="sidebar-link {{ request()->routeIs('admin.profile*') ? 'active' : '' }}"
+       href="{{ route('admin.profile') }}">
+        <span class="menu-icon">
+            <i class="fa-regular fa-id-card"></i>
+        </span>
+        <span class="label">Profil</span>
+    </a>
+    
+    {{-- LOGOUT --}}
+    <a class="sidebar-link logout {{ request()->routeIs('admin.logout') ? 'active' : '' }}"
+       href="{{ route('admin.logout') }}">
+        <span class="menu-icon">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </span>
+        <span class="label">Log Out</span>
+    </a>
+
+</nav>
     </aside>
     <main class="main-panel">
         <header class="topbar">

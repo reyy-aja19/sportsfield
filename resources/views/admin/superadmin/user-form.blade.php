@@ -21,10 +21,6 @@
             <input class="input-ui" name="phone" value="{{ old('phone', $user->phone) }}">
         </div>
         <div class="form-group">
-            <label>Poin</label>
-            <input class="input-ui" type="number" min="0" name="points" value="{{ old('points', $user->points ?? 0) }}">
-        </div>
-        <div class="form-group">
             <label>Role</label>
             <select class="select-ui" name="role">
                 @foreach(['user' => 'User', 'admin' => 'Admin'] as $value => $label)

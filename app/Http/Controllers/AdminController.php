@@ -12,6 +12,7 @@ use App\Models\Reward;
 use App\Models\User;
 use App\Models\Venue;
 use App\Models\Facility;
+use App\Models\AdminRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -157,6 +158,21 @@ class AdminController extends Controller
 
     public function dashboard(Request $request): View
 {
+    $admin = $this->adminUser($request);
+
+        // venue milik admin login
+    $adminVenueIds = Venue::where('user_id', $admin->id)
+        ->pluck('id');
+
+    // lapangan milik admin login
+    $adminCourtIds = Lapangan::whereIn('venue_id', $adminVenueIds)
+        ->pluck('id');
+
+    // =========================
+// SUPER ADMIN
+// =========================
+if ($admin->role === 'superadmin') {
+
     $revenuePerMonth = Payment::selectRaw("
             MONTH(created_at) as month,
             SUM(amount) as total
@@ -180,20 +196,105 @@ class AdminController extends Controller
         ->groupBy('month')
         ->pluck('total', 'month');
 
+    // pie user
+    $pieData = [
+        User::where('role', 'user')
+            ->where('status', 'Aktif')
+            ->count(),
+
+        User::where('role', 'user')
+            ->where('status', '!=', 'Aktif')
+            ->count(),
+    ];
+
+}
+
+// =========================
+// ADMIN
+// =========================
+else {
+
+    $revenuePerMonth = Payment::whereHas(
+            'booking',
+            fn($q) =>
+                $q->whereIn('lapangan_id', $adminCourtIds)
+        )
+        ->where('status', 'Lunas')
+        ->selectRaw("
+            MONTH(created_at) as month,
+            SUM(amount) as total
+        ")
+        ->groupBy('month')
+        ->pluck('total', 'month');
+
+    $bookingPerMonth = Booking::whereIn(
+            'lapangan_id',
+            $adminCourtIds
+        )
+        ->selectRaw("
+            MONTH(booking_date) as month,
+            COUNT(*) as total
+        ")
+        ->groupBy('month')
+        ->pluck('total', 'month');
+
+    $userPerMonth = OpenMatch::whereHas(
+            'booking',
+            fn($q) =>
+                $q->whereIn('lapangan_id', $adminCourtIds)
+        )
+        ->selectRaw("
+            MONTH(created_at) as month,
+            COUNT(*) as total
+        ")
+        ->groupBy('month')
+        ->pluck('total', 'month');
+
+    // pie booking
+    $pieData = [
+
+        Booking::whereIn(
+            'lapangan_id',
+            $adminCourtIds
+        )
+        ->where('status', 'Lunas')
+        ->count(),
+
+        Booking::whereIn(
+            'lapangan_id',
+            $adminCourtIds
+        )
+        ->where('status', 'DP')
+        ->count(),
+    ];
+}
+
     $months = range(1, 12);
 
     return view('admin.dashboard', $this->layoutData($request, [
 
-        'totalVenue' => Venue::count(),
+    'adminRole' => $admin->role,
 
-        'lapangan' => Lapangan::latest()
+    'totalVenue' => $admin->role === 'superadmin'
+        ? Venue::count()
+        : Venue::whereIn('id', $adminVenueIds)->count(),
+
+    'lapangan' => $admin->role === 'superadmin'
+        ? Lapangan::latest()->take(6)->get()
+        : Lapangan::whereIn('id', $adminCourtIds)
+            ->latest()
             ->take(6)
             ->get(),
 
-        'stats' => [
+    'stats' => $admin->role === 'superadmin'
+        ? [
             [
                 'label' => 'Total Users',
                 'value' => User::where('role', 'user')->count()
+            ],
+            [
+                'label' => 'Total Admin',
+                'value' => User::where('role', 'admin')->count()
             ],
             [
                 'label' => 'Total Lapangan',
@@ -208,45 +309,85 @@ class AdminController extends Controller
                     '.'
                 )
             ],
+        ]
+
+        : [
+            [
+                'label' => 'Total Booking',
+                'value' => Booking::whereIn(
+                    'lapangan_id',
+                    $adminCourtIds
+                )->count()
+            ],
+            [
+                'label' => 'Lapangan Aktif',
+                'value' => Lapangan::whereIn(
+                    'id',
+                    $adminCourtIds
+                )->count()
+            ],
+            [
+                'label' => 'Open Match',
+                'value' => OpenMatch::whereHas(
+                    'booking',
+                    fn($q) =>
+                        $q->whereIn('lapangan_id', $adminCourtIds)
+                )->count()
+            ],
+            [
+                'label' => 'Pendapatan',
+                'value' => 'Rp ' . number_format(
+                    (int) Payment::whereHas(
+                        'booking',
+                        fn($q) =>
+                            $q->whereIn('lapangan_id', $adminCourtIds)
+                    )
+                    ->where('status', 'Lunas')
+                    ->sum('amount'),
+                    0,
+                    ',',
+                    '.'
+                )
+            ],
         ],
 
-        'chartUsers' => array_map(
-            fn($m) => (int) ($userPerMonth[$m] ?? 0),
-            $months
-        ),
+    'chartUsers' => array_map(
+        fn($m) => (int) ($userPerMonth[$m] ?? 0),
+        $months
+    ),
 
-        'chartLapangan' => array_map(
-            fn($m) => (int) ($bookingPerMonth[$m] ?? 0),
-            $months
-        ),
+    'chartLapangan' => array_map(
+        fn($m) => (int) ($bookingPerMonth[$m] ?? 0),
+        $months
+    ),
 
-        'chartRevenue' => array_map(
-            fn($m) => (int) ($revenuePerMonth[$m] ?? 0),
-            $months
-        ),
+    'chartRevenue' => array_map(
+        fn($m) => (int) ($revenuePerMonth[$m] ?? 0),
+        $months
+    ),
 
-        'userRatio' => [
-            User::where('role', 'user')
-                ->where('status', 'Aktif')
-                ->count(),
+    'userRatio' => $pieData, [
+        User::where('role', 'user')
+            ->where('status', 'Aktif')
+            ->count(),
 
-            User::where('role', 'user')
-                ->where('status', '!=', 'Aktif')
-                ->count(),
-        ],
+        User::where('role', 'user')
+            ->where('status', '!=', 'Aktif')
+            ->count(),
+    ],
 
-    ]));
+]));
 }
 
     public function users(Request $request): View
     {
         $users = User::withCount('bookings')->orderByRaw("role='admin' desc")->orderByDesc('id')->get();
-        return view('admin.users', $this->layoutData($request, compact('users')));
+       return view('admin.superadmin.users', $this->layoutData($request, compact('users')));
     }
 
     public function userCreate(Request $request): View
     {
-        return view('admin.user-form', $this->layoutData($request, [
+        return view('admin.superadmin.user-form', $this->layoutData($request, [
             'mode' => 'create',
             'user' => new User(['role' => 'user', 'status' => 'Aktif']),
         ]));
@@ -258,14 +399,12 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'points' => ['nullable', 'integer', 'min:0'],
             'role' => ['required', 'in:admin,user'],
             'status' => ['required', 'in:Aktif,Nonaktif'],
             'password' => ['required', 'string', 'min:6'],
         ]);
 
         $data['password'] = bcrypt($data['password']);
-        $data['points'] = $data['points'] ?? 0;
 
         User::create($data);
         return redirect()->route('admin.users')->with('success', 'User berhasil ditambahkan.');
@@ -273,7 +412,7 @@ class AdminController extends Controller
 
     public function userEdit(Request $request, User $user): View
     {
-        return view('admin.user-form', $this->layoutData($request, [
+        return view('admin.superadmin.user-form', $this->layoutData($request, [
             'mode' => 'edit',
             'user' => $user,
         ]));
@@ -285,7 +424,6 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email,' . $user->id],
             'phone' => ['nullable', 'string', 'max:50'],
-            'points' => ['nullable', 'integer', 'min:0'],
             'role' => ['required', 'in:admin,user'],
             'status' => ['required', 'in:Aktif,Nonaktif'],
             'password' => ['nullable', 'string', 'min:6'],
@@ -296,7 +434,6 @@ class AdminController extends Controller
         } else {
             unset($data['password']);
         }
-        $data['points'] = $data['points'] ?? 0;
 
         $user->update($data);
         return redirect()->route('admin.users')->with('success', 'User berhasil diperbarui.');
@@ -325,9 +462,7 @@ class AdminController extends Controller
 
     public function courtCreate(Request $request): View
 {
-    $venues = Venue::where('status', 'Aktif')
-        ->orderBy('name')
-        ->get();
+    $venues = Venue::orderBy('name')->get();
 
     $facilities = Facility::orderBy('name')->get();
 
@@ -873,4 +1008,38 @@ class AdminController extends Controller
     {
         return view('admin.logout-success', $this->layoutData($request));
     }
+
+    public function approveAdmin(AdminRequest $adminRequest)
+{
+    $user = $adminRequest->user;
+
+    $user->update([
+        'role' => 'admin'
+    ]);
+
+    $adminRequest->update([
+        'status' => 'Approved'
+    ]);
+
+    return back()->with(
+        'success',
+        'User berhasil dijadikan admin'
+    );
+}
+
+public function adminRequests(Request $request)
+{
+    $admins = User::where('role', 'admin')
+        ->latest()
+        ->get();
+
+    return view(
+        'admin.superadmin.index',
+        $this->layoutData($request, [
+            'admins' => $admins,
+            'heading' => 'Management Admin',
+            'title' => 'Management Admin'
+        ])
+    );
+}
 }

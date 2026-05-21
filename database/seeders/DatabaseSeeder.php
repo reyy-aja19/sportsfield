@@ -80,10 +80,28 @@ class DatabaseSeeder extends Seeder
         ])->map(fn ($c) => Lapangan::updateOrCreate(['nama' => $c['nama']], $c));
 
         $rewards = collect([
-            ['title' => 'Voucher Minuman', 'points_required' => 20, 'badge' => 'voucher', 'description' => 'Tukar 20 poin untuk 1 voucher minuman.', 'status' => 'Aktif', 'image' => 'uploads/rewards/voucher-minuman.svg'],
-            ['title' => 'Diskon 50%', 'points_required' => 50, 'badge' => '50%', 'description' => 'Potongan setengah harga untuk booking berikutnya.', 'status' => 'Aktif', 'image' => 'uploads/rewards/diskon-50.svg'],
-            ['title' => 'Voucher 1 Jam', 'points_required' => 70, 'badge' => '1 jam', 'description' => 'Main gratis 1 jam pada lapangan pilihan.', 'status' => 'Aktif', 'image' => 'uploads/rewards/voucher-1-jam.svg'],
-        ])->map(fn ($r) => Reward::updateOrCreate(['title' => $r['title']], $r));
+    [
+        'title' => 'Voucher Minuman',
+        'points_required' => 20,
+        'description' => 'Tukar 20 poin untuk 1 voucher minuman.',
+        'status' => 'Aktif',
+        'image' => 'uploads/rewards/voucher-minuman.svg'
+    ],
+    [
+        'title' => 'Diskon 50%',
+        'points_required' => 50,
+        'description' => 'Potongan setengah harga untuk booking berikutnya.',
+        'status' => 'Aktif',
+        'image' => 'uploads/rewards/diskon-50.svg'
+    ],
+    [
+        'title' => 'Voucher 1 Jam',
+        'points_required' => 70,
+        'description' => 'Main gratis 1 jam pada lapangan pilihan.',
+        'status' => 'Aktif',
+        'image' => 'uploads/rewards/voucher-1-jam.svg'
+    ],
+])->map(fn ($r) => Reward::updateOrCreate(['title' => $r['title']], $r));
 
         $bookingData = [
             [$users[0], $courts[1], 'SayurDipay', '2026-04-10', '19:00', '20:00', 1, 'Lunas'],
@@ -130,9 +148,13 @@ class DatabaseSeeder extends Seeder
         }
 
         Redemption::updateOrCreate(
-            ['user_id' => $users[0]->id, 'reward_id' => $rewards[0]->id],
-            ['redeemed_at' => now(), 'qr_code' => 'QR-MINUMAN-001', 'status' => 'Berhasil']
-        );
+    ['user_id' => $users[0]->id, 'reward_id' => $rewards[0]->id],
+    [
+        'redeemed_at' => now(),
+        'qr_code' => 'QR-MINUMAN-001',
+        'status' => 'Selesai'
+    ]
+);
 
         OpenMatch::updateOrCreate(
             ['title' => 'Sparing Futsal Malam'],

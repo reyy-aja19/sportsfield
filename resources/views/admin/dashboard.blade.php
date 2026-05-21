@@ -1,32 +1,93 @@
-@extends('layouts.admin', ['title' => 'Dashboard Admin', 'heading' => 'Dashboard'])
+@extends('layouts.admin', [
+    'title' => $adminRole === 'superadmin'
+        ? 'Dashboard Super Admin'
+        : 'Dashboard Admin',
+
+    'heading' => $adminRole === 'superadmin'
+        ? 'Dashboard Super Admin'
+        : 'Dashboard Admin'
+])
 
 @section('content')
 
 {{-- HERO --}}
 <div class="dashboard-hero surface dashboard-hero-clean">
     <div>
+
         <span class="eyebrow">
             <i class="fa-solid fa-wave-square"></i>
             Realtime Overview
         </span>
 
-        <h2>Sports Field Rental Admin</h2>
+        <h2>
+            {{ $adminRole === 'superadmin'
+                ? 'Sports Field Rental Super Admin'
+                : 'Sports Field Rental Admin'
+            }}
+        </h2>
 
         <p style="margin-top:10px;color:#5e7767;font-size:14px;">
-            Monitor user, venue, booking, revenue, dan aktivitas sistem secara realtime.
+
+            {{ $adminRole === 'superadmin'
+                ? 'Kelola seluruh sistem, admin, user, laporan, dan aktivitas platform secara realtime.'
+                : 'Kelola booking, lapangan, venue, dan aktivitas operasional lapangan.'
+            }}
+
         </p>
     </div>
 
     <div class="btn-row wrap">
-        <a href="{{ route('admin.reports') }}" class="btn-ui btn-green anim-click">
+
+        <a href="{{ route('admin.reports') }}"
+           class="btn-ui btn-green anim-click">
+
             <i class="fa-regular fa-file-lines"></i>
             Export Laporan
+
         </a>
 
-        <a href="{{ route('admin.venue.index') }}" class="btn-ui btn-gray anim-click">
+        <a href="{{ route('admin.venue.index') }}"
+           class="btn-ui btn-gray anim-click">
+
             <i class="fa-solid fa-building"></i>
             Kelola Venue
+
         </a>
+
+        {{-- SUPER ADMIN --}}
+        @if($adminRole === 'superadmin')
+
+            <a href="{{ route('admin.requests') }}"
+               class="btn-ui btn-green anim-click">
+
+                <i class="fa-solid fa-user-shield"></i>
+                Management Admin
+
+            </a>
+
+            <a href="{{ route('admin.users') }}"
+               class="btn-ui btn-gray anim-click">
+
+                <i class="fa-solid fa-users"></i>
+                Management User
+
+            </a>
+
+        @endif
+
+        {{-- ADMIN --}}
+        @if($adminRole === 'admin')
+
+            <a href="{{ route('admin.bookings') }}"
+               class="btn-ui btn-green anim-click">
+
+                <i class="fa-solid fa-calendar-check"></i>
+                Kelola Booking
+
+            </a>
+
+        @endif
+
     </div>
 </div>
 
@@ -34,7 +95,9 @@
 <div class="stats-grid">
 
     @foreach($stats as $stat)
+
         <div class="stat-card anim-click">
+
             <div class="stat-icon">
                 <i class="fa-solid fa-chart-line"></i>
             </div>
@@ -46,11 +109,14 @@
             <div class="value">
                 {{ $stat['value'] }}
             </div>
+
         </div>
+
     @endforeach
 
     {{-- TOTAL VENUE --}}
     <div class="stat-card anim-click">
+
         <div class="stat-icon">
             <i class="fa-solid fa-building"></i>
         </div>
@@ -62,6 +128,7 @@
         <div class="value">
             {{ $totalVenue ?? 0 }}
         </div>
+
     </div>
 
 </div>
@@ -70,15 +137,24 @@
 <div class="surface" style="margin-bottom:20px;">
 
     <div class="section-actions">
+
         <div>
+
             <h3 style="margin:0;font-size:22px;color:#0b3d20;">
                 Lapangan Terbaru
             </h3>
 
             <p style="margin-top:6px;color:#5e7767;font-size:13px;">
-                lapangan terbaru yang ditambahkan admin.
+
+                {{ $adminRole === 'superadmin'
+                    ? 'Semua lapangan terbaru yang ditambahkan admin.'
+                    : 'Lapangan terbaru yang tersedia di sistem.'
+                }}
+
             </p>
+
         </div>
+
     </div>
 
     <div class="panel-grid">
@@ -87,81 +163,81 @@
 
             <div class="court-card court-card-modern anim-click">
 
-{{-- IMAGE --}}
-<div class="court-slider">
+                {{-- IMAGE --}}
+                <div class="court-slider">
 
-    @php
-        $gallery = collect($item->foto_gallery ?? []);
+                    @php
+                        $gallery = collect($item->foto_gallery ?? []);
 
-        if ($item->foto) {
-            $gallery->prepend($item->foto);
-        }
+                        if ($item->foto) {
+                            $gallery->prepend($item->foto);
+                        }
 
-        $gallery = $gallery->unique()->values();
-    @endphp
+                        $gallery = $gallery->unique()->values();
+                    @endphp
 
-    @if($gallery->count())
+                    @if($gallery->count())
 
-        <img
-            src="{{ asset($gallery[0]) }}"
-            class="court-image active"
-            alt="{{ $item->nama }}"
-        >
+                        <img
+                            src="{{ asset($gallery[0]) }}"
+                            class="court-image active"
+                            alt="{{ $item->nama }}"
+                        >
 
-    @else
+                    @else
 
-        <div class="court-empty-icon">
-            <i class="fa-solid fa-image"></i>
-        </div>
+                        <div class="court-empty-icon">
+                            <i class="fa-solid fa-image"></i>
+                        </div>
 
-    @endif
+                    @endif
 
-</div>
+                </div>
 
-{{-- CONTENT --}}
-<div class="court-copy">
+                {{-- CONTENT --}}
+                <div class="court-copy">
 
-    <div class="court-top">
+                    <div class="court-top">
 
-        <div>
+                        <div>
 
-            <h3>
-                {{ $item->nama }}
-            </h3>
+                            <h3>
+                                {{ $item->nama }}
+                            </h3>
 
-            <div class="court-meta">
+                            <div class="court-meta">
 
-                <span>
-                    <i class="fa-solid fa-location-dot"></i>
-                    {{ $item->lokasi ?? 'Lokasi belum tersedia' }}
-                </span>
+                                <span>
+                                    <i class="fa-solid fa-location-dot"></i>
+                                    {{ $item->lokasi ?? 'Lokasi belum tersedia' }}
+                                </span>
 
-                <span>
-                    <i class="fa-solid fa-futbol"></i>
-                    {{ $item->jenis ?? 'Sport Venue' }}
-                </span>
+                                <span>
+                                    <i class="fa-solid fa-futbol"></i>
+                                    {{ $item->jenis ?? 'Sport Venue' }}
+                                </span>
 
-            </div>
+                            </div>
 
-        </div>
+                        </div>
 
-        <div class="court-actions">
+                        <div class="court-actions">
 
-            <a
-               href="{{ route('admin.courts.edit', $item->id) }}"
-                class="btn-ui warning btn-edit-icon"
-            >
-                <i class="fa-solid fa-pen"></i>
-            </a>
+                            <a
+                               href="{{ route('admin.courts.edit', $item->id) }}"
+                               class="btn-ui warning btn-edit-icon"
+                            >
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
 
-        </div>
+                        </div>
 
-    </div>
-```
-
+                    </div>
 
                     <div class="court-description">
+
                         {{ Str::limit($item->deskripsi ?? 'Tidak ada deskripsi lapangan.', 120) }}
+
                     </div>
 
                     <div class="court-tags">
@@ -186,6 +262,7 @@
         @empty
 
             <div class="center-box highlight">
+
                 <h2 style="font-size:28px;">
                     Belum Ada Lapangan
                 </h2>
@@ -194,10 +271,14 @@
                     Tambahkan Lapangan pertama untuk mulai menerima booking.
                 </p>
 
-                <a href="{{ route('admin.courts.create') }}" class="btn-ui btn-green">
+                <a href="{{ route('admin.courts.create') }}"
+                   class="btn-ui btn-green">
+
                     <i class="fa-solid fa-plus"></i>
                     Tambah Lapangan
+
                 </a>
+
             </div>
 
         @endforelse
@@ -208,55 +289,135 @@
 {{-- CHARTS --}}
 <div class="card-grid-2 dashboard-charts">
 
-    <div class="panel-card highlight anim-click">
-        <div class="panel-title">
-            <i class="fa-solid fa-users"></i>
-            Grafik Data User
+    {{-- SUPER ADMIN --}}
+    @if($adminRole === 'superadmin')
+
+        {{-- USER --}}
+        <div class="panel-card highlight anim-click">
+
+            <div class="panel-title">
+                <i class="fa-solid fa-users"></i>
+                Grafik Pertumbuhan User
+            </div>
+
+            <div class="chart-wrap">
+                <canvas id="chartUsers"></canvas>
+            </div>
+
         </div>
 
-        <div class="chart-wrap">
-            <canvas id="chartUsers"></canvas>
-        </div>
-    </div>
+        {{-- BOOKING --}}
+        <div class="panel-card anim-click">
 
-    <div class="panel-card anim-click">
-        <div class="panel-title">
-            <i class="fa-solid fa-calendar-check"></i>
-            Grafik Penyewaan Lapangan
-        </div>
+            <div class="panel-title">
+                <i class="fa-solid fa-calendar-check"></i>
+                Booking Platform
+            </div>
 
-        <div class="chart-wrap">
-            <canvas id="chartCourt"></canvas>
-        </div>
-    </div>
+            <div class="chart-wrap">
+                <canvas id="chartCourt"></canvas>
+            </div>
 
-    <div class="panel-card anim-click">
-        <div class="panel-title">
-            <i class="fa-solid fa-circle-half-stroke"></i>
-            Status User
         </div>
 
-        <div class="chart-wrap">
-            <canvas id="chartPie"></canvas>
-        </div>
-    </div>
+        {{-- USER STATUS --}}
+        <div class="panel-card anim-click">
 
-    <div class="panel-card anim-click">
-        <div class="panel-title">
-            <i class="fa-solid fa-money-bill-trend-up"></i>
-            Grafik Pendapatan
+            <div class="panel-title">
+                <i class="fa-solid fa-circle-half-stroke"></i>
+                Status User Platform
+            </div>
+
+            <div class="chart-wrap">
+                <canvas id="chartPie"></canvas>
+            </div>
+
         </div>
 
-        <div class="chart-wrap">
-            <canvas id="chartRevenue"></canvas>
+        {{-- REVENUE --}}
+        <div class="panel-card anim-click">
+
+            <div class="panel-title">
+                <i class="fa-solid fa-money-bill-trend-up"></i>
+                Pendapatan Platform
+            </div>
+
+            <div class="chart-wrap">
+                <canvas id="chartRevenue"></canvas>
+            </div>
+
         </div>
-    </div>
+
+    @endif
+
+
+    {{-- ADMIN --}}
+    @if($adminRole === 'admin')
+
+        {{-- BOOKING --}}
+        <div class="panel-card highlight anim-click">
+
+            <div class="panel-title">
+                <i class="fa-solid fa-calendar-check"></i>
+                Booking Venue Saya
+            </div>
+
+            <div class="chart-wrap">
+                <canvas id="chartCourt"></canvas>
+            </div>
+
+        </div>
+
+        {{-- REVENUE --}}
+        <div class="panel-card anim-click">
+
+            <div class="panel-title">
+                <i class="fa-solid fa-money-bill-trend-up"></i>
+                Pendapatan Venue Saya
+            </div>
+
+            <div class="chart-wrap">
+                <canvas id="chartRevenue"></canvas>
+            </div>
+
+        </div>
+
+        {{-- JAM RAMAI --}}
+        <div class="panel-card anim-click">
+
+            <div class="panel-title">
+                <i class="fa-solid fa-clock"></i>
+                Jam Ramai Booking
+            </div>
+
+            <div class="chart-wrap">
+                <canvas id="chartUsers"></canvas>
+            </div>
+
+        </div>
+
+        {{-- STATUS LAPANGAN --}}
+        <div class="panel-card anim-click">
+
+            <div class="panel-title">
+                <i class="fa-solid fa-futbol"></i>
+                Status Lapangan
+            </div>
+
+            <div class="chart-wrap">
+                <canvas id="chartPie"></canvas>
+            </div>
+
+        </div>
+
+    @endif
 
 </div>
 
 @endsection
 
 @push('scripts')
+
 <script>
 
 const labels = ['Jan','Feb','Mar','Apr','May'];
@@ -287,6 +448,7 @@ const lineOptions = {
     },
 
     scales: {
+
         x: {
             grid: {
                 display: false
@@ -317,6 +479,7 @@ const pieOptions = {
     maintainAspectRatio: false,
 
     plugins: {
+
         legend: {
             position: 'bottom',
 
@@ -357,6 +520,7 @@ function renderLineChart(id, data) {
         type: 'line',
 
         data: {
+
             labels,
 
             datasets: [{
@@ -395,13 +559,20 @@ new Chart(document.getElementById('chartPie'), {
 
     data: {
 
-        labels: [
-            'User Aktif',
-            'User Nonaktif'
-        ],
+        labels:
+    @json(
+        $adminRole === 'superadmin'
+        ? ['User Aktif', 'User Nonaktif']
+        : ['Lapangan Aktif', 'Maintenance']
+    ),
 
         datasets: [{
-            data: @json($userRatio),
+            data:
+    @json(
+        $adminRole === 'superadmin'
+        ? $userRatio
+        : $courtStatus
+    ),
 
             backgroundColor: [
                 '#10b04a',
@@ -418,4 +589,5 @@ new Chart(document.getElementById('chartPie'), {
 });
 
 </script>
+
 @endpush

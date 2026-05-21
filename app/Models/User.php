@@ -34,6 +34,10 @@ class User extends Authenticatable
         ];
     }
 
+    public function venues()
+{
+    return $this->hasMany(Venue::class);
+}
 
     public function isSuperAdmin()
     {

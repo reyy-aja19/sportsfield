@@ -22,14 +22,34 @@ Route::middleware([CekLogin::class, 'role:superadmin,admin'])
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
     Route::middleware('role:superadmin')->group(function () {
-        Route::get('/users', [AdminController::class, 'users'])->name('users');
-        Route::get('/users/create', [AdminController::class, 'userCreate'])->name('users.create');
-        Route::post('/users', [AdminController::class, 'userStore'])->name('users.store');
-        Route::get('/users/{user}/edit', [AdminController::class, 'userEdit'])->name('users.edit');
-        Route::put('/users/{user}', [AdminController::class, 'userUpdate'])->name('users.update');
-        Route::post('/users/{user}/toggle', [AdminController::class, 'userToggle'])->name('users.toggle');
-        Route::delete('/users/{user}', [AdminController::class, 'userDelete'])->name('users.delete');
-    });
+
+    Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/users/create', [AdminController::class, 'userCreate'])->name('users.create');
+    Route::post('/users', [AdminController::class, 'userStore'])->name('users.store');
+    Route::get('/users/{user}/edit', [AdminController::class, 'userEdit'])->name('users.edit');
+    Route::put('/users/{user}', [AdminController::class, 'userUpdate'])->name('users.update');
+    Route::post('/users/{user}/toggle', [AdminController::class, 'userToggle'])->name('users.toggle');
+    Route::delete('/users/{user}', [AdminController::class, 'userDelete'])->name('users.delete');
+
+    // MANAGEMENT ADMIN
+    Route::get(
+        '/admin-requests',
+        [AdminController::class, 'adminRequests']
+    )->name('requests');
+
+    Route::post(
+        '/admin-requests/{adminRequest}/approve',
+        [AdminController::class, 'approveAdmin']
+    )->name('requests.approve');
+
+    Route::post(
+        '/admin-requests/{adminRequest}/reject',
+        [AdminController::class, 'rejectAdmin']
+    )->name('requests.reject');
+
+
+
+});
 
     Route::get('/lapangan', [AdminController::class, 'courts'])->name('courts');
 

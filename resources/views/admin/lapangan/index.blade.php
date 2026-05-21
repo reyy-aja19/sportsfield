@@ -89,7 +89,7 @@
 
                     <span>
                         <i class="fa-solid fa-location-dot"></i>
-                        {{ $l->venue->nama ?? '-' }}
+                        {{ $l->venue->name ?? '-' }}
                     </span>
 
                 </div>

@@ -7,22 +7,27 @@ use Illuminate\Database\Eloquent\Model;
 class Venue extends Model
 {
     protected $fillable = [
-        'name',
-        'city',
-        'address',
-        'phone',
-        'email',
-        'description',
-        'status',
-        'photo',
-
-        // tambahan maps
-        'google_maps',
-        'map_embed',
-    ];
+    'user_id',
+    'name',
+    'city',
+    'address',
+    'phone',
+    'email',
+    'description',
+    'status',
+    'photo',
+    'google_maps',
+    'map_embed',
+    'approval_status',
+];
 
     public function lapangan()
     {
         return $this->hasMany(Lapangan::class);
     }
+
+    public function user()
+{
+    return $this->belongsTo(User::class);
+}
 }
