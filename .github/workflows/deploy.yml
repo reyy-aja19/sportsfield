@@ -125,15 +125,14 @@ jobs:
 
             echo "✅ MySQL ready"
 
-            # --- PAKSA REFRESH CONFIG CACHE SEBELUM MIGRATION ---
+            # 1. Bersihkan cache konfigurasi lama
             docker compose exec -T app php artisan config:clear
             docker compose exec -T app php artisan route:clear
-            # ----------------------------------------------------
 
-            # Migration + Seeder (Sekarang pasti membaca user & password dari .env terbaru)
-            docker compose exec -T app php artisan migrate --seed --force --no-interaction
+            # 2. Ambil variabel .env VPS secara langsung sebelum menjalankan migrasi (Paling Ampuh!)
+            docker compose exec -T app sh -c "export \$(cat .env | xargs) && php artisan migrate --seed --force --no-interaction"
 
-            # Tambahan pembersihan view di akhir
+            # 3. Bersihkan sisa cache view
             docker compose exec -T app php artisan view:clear
 
             echo "✅ Deployment selesai!"
