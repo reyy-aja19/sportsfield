@@ -14,6 +14,7 @@ use App\Models\Venue;
 use App\Models\Facility;
 use App\Models\AdminRequest;
 use App\Mail\BookingConfirmedMail;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -855,53 +856,6 @@ $courtStatus = 'Buka';
         return back()->with('success', 'Reward berhasil dihapus.');
     }
 
-    public function redeemReward(Request $request, Reward $reward): RedirectResponse
-    {
-        $user = User::find($request->session()->get('admin_user_id'));
-
-        if ($reward->status !== 'Aktif') {
-            return back()->with('error', 'Reward tidak aktif');
-        }
-
-        if ($reward->stock <= 0) {
-            return back()->with('error', 'Stok reward habis');
-        }
-
-        if (!$user) {
-    return back()->with(
-        'error',
-        'User tidak ditemukan'
-    );
-}
-
-        if ($user->points < $reward->points_required) {
-    return back()->with(
-        'error',
-        'Poin tidak mencukupi'
-    );
-}
-
-DB::transaction(function () use ($user, $reward) {
-
-    $user->decrement(
-        'points',
-        $reward->points_required
-    );
-
-    $reward->decrement('stock');
-
-    Redemption::create([
-        'user_id' => $user->id,
-        'reward_id' => $reward->id,
-        'redeemed_at' => now(),
-        'qr_code' => strtoupper(Str::random(10)),
-        'redeem_code' => 'RDM-' . strtoupper(Str::random(6)),
-        'status' => 'Pending',
-    ]);
-});
-        return back()->with('success', 'Reward berhasil diredeem');
-    }
-
     public function payments(Request $request): View
     {
         $payments = Payment::with(['user', 'booking.lapangan'])->latest()->get();
@@ -952,6 +906,96 @@ Mail::to($payment->user->email)
     return back()->with(
         'success',
         'Pembayaran berhasil diverifikasi.'
+    );
+}
+
+    public function notifications(Request $request): View
+{
+    $notifications = collect()
+
+    ->merge(
+        Review::with(['user','lapangan'])
+        ->whereNull('reply_message')
+        ->latest()
+        ->get()
+        ->map(function($review){
+
+            return [
+                'icon'=>'fa-regular fa-message',
+                'title'=>'Review belum dibalas',
+
+                'description'=>
+                    ($review->user?->name ?? 'User')
+                    .' • '.
+                    ($review->lapangan?->nama ?? 'Lapangan'),
+
+                'time'=>
+                    optional(
+                        $review->created_at
+                    )->diffForHumans(),
+
+                'sort_at'=>
+                    optional(
+                        $review->created_at
+                    )->timestamp ?? 0,
+
+                'url'=>route('admin.reviews')
+            ];
+        })
+    )
+
+    ->merge(
+        Payment::with([
+            'user',
+            'booking.lapangan'
+        ])
+        ->where('status','!=','Lunas')
+        ->latest()
+        ->get()
+
+        ->map(function($payment){
+
+            return [
+
+                'icon'=>'fa-solid fa-wallet',
+
+                'title'=>
+                    'Pembayaran menunggu verifikasi',
+
+                'description'=>
+                    ($payment->user?->name ?? 'User')
+                    .' • '.
+                    ($payment->booking?->lapangan?->nama ?? 'Lapangan'),
+
+                'time'=>
+                    optional(
+                        $payment->created_at
+                    )->diffForHumans(),
+
+                'sort_at'=>
+                    optional(
+                        $payment->created_at
+                    )->timestamp ?? 0,
+
+                'url'=>
+                    route('admin.payments')
+            ];
+        })
+    )
+
+    ->sortByDesc('sort_at')
+    ->values();
+
+    return view(
+        'admin.notifications',
+        $this->layoutData(
+            $request,
+            [
+                'notifications'=>$notifications,
+                'heading'=>'Semua Notifikasi',
+                'title'=>'Notifikasi'
+            ]
+        )
     );
 }
 

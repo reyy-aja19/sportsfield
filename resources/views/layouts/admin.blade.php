@@ -160,51 +160,66 @@
 </nav>
     </aside>
     <main class="main-panel">
-        <header class="topbar">
-            <form class="search-wrap search-clean" action="" method="GET" id="adminGlobalSearch">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" name="q" value="{{ request('q') }}" placeholder="Search..." data-global-search>
-                <button type="submit" aria-label="Search"><i class="fa-solid fa-arrow-right"></i></button>
-            </form>
-            <div class="topbar-right">
-                <div class="notification-wrap">
-                    <button class="topbar-chip bell-chip anim-click" type="button" aria-label="Notifikasi" data-notification-toggle>
-                        <i class="fa-regular fa-bell"></i>
-                        @if(($totalNotificationCount ?? 0) > 0)<span class="notif-badge">{{ $totalNotificationCount }}</span>@endif
-                    </button>
-                    <div class="notification-panel" id="notificationPanel">
-                        <div class="notification-title">Notifikasi</div>
-                        <div class="notification-list">
-                            @forelse(($notifications ?? []) as $notification)
-                                <a href="{{ $notification['url'] }}" class="notification-item anim-click">
-                                    <div class="notification-icon"><i class="{{ $notification['icon'] }}"></i></div>
-                                    <div class="notification-copy">
-                                        <strong>{{ $notification['label'] }}</strong>
-                                        <span>{{ $notification['meta'] }}</span>
-                                    </div>
-                                    <small>{{ $notification['time'] }}</small>
-                                </a>
-                            @empty
-                                <div class="notification-empty">Belum ada notifikasi baru.</div>
-                            @endforelse
-                        </div>
+       <header class="topbar">
+    {{-- Search hanya muncul di halaman bukan dashboard --}}
+    @if(!request()->routeIs('admin.dashboard'))
+        <form class="search-wrap search-clean" id="adminGlobalSearch">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" name="q" value="{{ request('q') }}" placeholder="Search..." data-global-search>
+            <button type="submit"><i class="fa-solid fa-arrow-right"></i></button>
+        </form>
+    @endif
+
+    {{-- Notif & Profil selalu di kanan --}}
+    <div class="topbar-right">
+        {{-- Notifikasi --}}
+        <div class="notification-wrap">
+            <button class="topbar-chip bell-chip" data-notification-toggle>
+                <i class="fa-regular fa-bell"></i>
+                @if(($totalNotificationCount ?? 0) > 0)
+                    <span class="notif-badge">{{ $totalNotificationCount }}</span>
+                @endif
+            </button>
+            <div class="notification-panel" id="notificationPanel">
+                <div class="notification-title">Notifikasi</div>
+                <div class="notification-list">
+                    @forelse(($notifications ?? []) as $notification)
+                        <a href="{{ $notification['url'] ?? '#' }}" class="notification-item">
+                            <div class="notification-icon">
+                                <i class="{{ $notification['icon'] ?? 'fa-solid fa-bell' }}"></i>
+                            </div>
+                            <div class="notification-copy">
+                                <strong>{{ $notification['label'] ?? 'Notifikasi' }}</strong>
+                                <span>{{ $notification['meta'] ?? '-' }}</span>
+                            </div>
+                            <small>{{ $notification['time'] ?? '' }}</small>
+                        </a>
+                    @empty
+                        <div class="notification-empty">Belum ada notifikasi baru.</div>
+                    @endforelse
+                    <div class="notification-footer">
+                        <a href="{{ route('admin.notifications') }}" class="btn-ui">Lihat Semua</a>
                     </div>
                 </div>
-                <a href="{{ route('admin.profile') }}" class="topbar-profile anim-click">
-                    <div class="avatar avatar-photo">
-                        @if(isset($adminUser) && $adminUser->profile_photo)
-    <img src="{{ asset($adminUser->profile_photo) }}" alt="{{ $adminUser->name }}">
-@else
-    <i class="fa-solid fa-user"></i>
-@endif
-                    </div>
-                   <div class="user-meta">
-    <strong>{{ $adminUser->name ?? 'Admin' }}</strong>
-    {{ $adminUser->email ?? 'admin@gmail.com' }}
-</div>
-                </a>
             </div>
-        </header>
+        </div>
+
+        {{-- Profil --}}
+        <a href="{{ route('admin.profile') }}" class="topbar-profile">
+            <div class="avatar avatar-photo">
+                @if(isset($adminUser) && $adminUser->profile_photo)
+                    <img src="{{ asset($adminUser->profile_photo) }}" alt="{{ $adminUser->name }}">
+                @else
+                    <i class="fa-solid fa-user"></i>
+                @endif
+            </div>
+            <div class="user-meta">
+                <strong>{{ $adminUser->name ?? 'Admin' }}</strong>
+                {{ $adminUser->email ?? 'admin@gmail.com' }}
+            </div>
+        </a>
+    </div>
+</header>
         <section class="content">
             <div class="page-head">
                 <div class="page-title-wrap">
@@ -246,17 +261,33 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    document.querySelectorAll('input[type=file]').forEach(function (input) {
-        input.addEventListener('change', function () {
-            const previewId = this.dataset.preview;
-            if (!previewId || !this.files || !this.files[0]) return;
-            const preview = document.getElementById(previewId);
-            if (preview) {
-                preview.src = URL.createObjectURL(this.files[0]);
-                preview.closest('.preview-shell')?.classList.add('has-image');
-            }
-        });
+    document.querySelectorAll('input[type=file]')
+.forEach(function(input){
+
+    input.addEventListener('change',function(){
+
+        const previewId=this.dataset.preview;
+
+        if(!previewId || !this.files[0]) return;
+
+        const preview=
+            document.getElementById(previewId);
+
+        if(preview){
+
+            preview.src=
+                URL.createObjectURL(
+                    this.files[0]
+                );
+
+            preview.style.display='block';
+
+            preview.closest('.preview-shell')
+            ?.classList.add('has-image');
+        }
+
     });
+
 });
 </script>
  <script>
@@ -283,19 +314,51 @@ document.addEventListener('DOMContentLoaded', function () {
     if (searchForm) { searchForm.addEventListener('submit', function (e) { e.preventDefault(); applyFilter(); }); }
     applyFilter();
 
-    document.querySelectorAll('[data-slider]').forEach(function (slider) {
-        const slides = Array.from(slider.querySelectorAll('.slide-photo'));
-        const current = slider.querySelector('[data-slide-current]');
-        let index = 0;
-        function show(next) {
-            if (!slides.length) return;
-            index = (next + slides.length) % slides.length;
-            slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
-            if (current) current.textContent = index + 1;
+   document.querySelectorAll('[data-slider]').forEach(function(slider){
+
+    const slides = Array.from(
+        slider.querySelectorAll('.slide-photo')
+    );
+
+    const current =
+        slider.querySelector('[data-slide-current]');
+
+    let index = 0;
+
+    function show(next){
+
+        index = (next + slides.length)
+                % slides.length;
+
+        slides.forEach(function(slide,i){
+
+            slide.classList.remove('active');
+
+            if(i===index){
+                slide.classList.add('active');
+            }
+
+        });
+
+        if(current){
+            current.textContent=index+1;
         }
-        slider.querySelector('[data-slide-prev]')?.addEventListener('click', () => show(index - 1));
-        slider.querySelector('[data-slide-next]')?.addEventListener('click', () => show(index + 1));
-    });
+    }
+
+    show(0);
+
+    slider.querySelector('[data-slide-prev]')
+        ?.addEventListener(
+            'click',
+            ()=>show(index-1)
+        );
+
+    slider.querySelector('[data-slide-next]')
+        ?.addEventListener(
+            'click',
+            ()=>show(index+1)
+        );
+});
 
     const notifList = document.querySelector('.notification-list');
     if (notifList) {

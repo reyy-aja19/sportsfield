@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\FacilityController;
+use App\Http\Controllers\RewardController;
 use App\Http\Middleware\CekLogin;
 use Illuminate\Support\Facades\Route;
 
@@ -98,9 +99,9 @@ Route::post(
     Route::put('/rewards/{reward}', [AdminController::class, 'rewardUpdate'])->name('rewards.update');
     Route::post('/rewards/{reward}/toggle', [AdminController::class, 'rewardToggle'])->name('rewards.toggle');
     Route::delete('/rewards/{reward}', [AdminController::class, 'rewardDelete'])->name('rewards.delete');
-    Route::post('/reward/{reward}/redeem',
-    [AdminController::class, 'redeemReward']
-)->name('reward.redeem');
+
+    Route::get('/notifications', [AdminController::class, 'notifications'])
+    ->name('notifications');
 
     Route::get('/payments', [AdminController::class, 'payments'])->name('payments');
     Route::post('/payments/{payment}/verify', [AdminController::class, 'paymentVerify'])->name('payments.verify');
@@ -113,4 +114,12 @@ Route::post(
     Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
     Route::post('/profile', [AdminController::class, 'profileUpdate'])->name('profile.update');
     Route::get('/logout', [AdminController::class, 'logoutConfirm'])->name('logout');
+});
+Route::middleware('auth')->group(function () {
+
+    Route::post(
+        '/rewards/{reward}/redeem',
+        [RewardController::class,'redeem']
+    )->name('rewards.redeem');
+
 });

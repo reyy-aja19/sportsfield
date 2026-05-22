@@ -22,73 +22,138 @@
     <div style="display:flex; justify-content:flex-end;"><button class="btn-ui btn-green">Tambah Reward</button></div>
 </form>
 <div class="reward-grid mt-16">
+    
     @foreach($rewards as $reward)
-    <div class="reward-card">
+<div class="reward-card">
 
-        @if($reward->image)
-            <img class="reward-photo"
-                 src="{{ asset($reward->image) }}"
-                 alt="{{ $reward->title }}">
-        @endif
+    @if($reward->image)
+        <img class="reward-photo"
+             src="{{ asset($reward->image) }}"
+             alt="{{ $reward->title }}">
+    @endif
 
-        <div style="font-weight:700; font-size:13px;">
-            {{ $reward->title }}
-        </div>
+    <div style="font-weight:700; font-size:13px;">
+        {{ $reward->title }}
+    </div>
 
-        <div class="muted">
-            {{ $reward->points_required }} Poin
-        </div>
+    <div class="muted">
+        {{ $reward->points_required }} Poin
+    </div>
 
-        <div class="muted">
-            {{ $reward->status }}
-        </div>
+    <div class="muted">
+        {{ $reward->status }}
+    </div>
 
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px; flex-wrap:wrap;">
-            <a class="btn-ui btn-green"
-               href="{{ route('admin.rewards.edit', $reward) }}">
-               Edit
-            </a>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
 
-            <form method="POST"
-                  action="{{ route('admin.rewards.toggle', $reward) }}">
-                @csrf
-                <button class="btn-ui btn-gray">
-                    Toggle
-                </button>
-            </form>
+        <a class="btn-ui btn-green"
+           href="{{ route('admin.rewards.edit',$reward) }}">
+            Edit
+        </a>
 
-            <form method="POST"
-                  action="{{ route('admin.rewards.delete', $reward) }}"
-                  onsubmit="return confirm('Hapus reward ini?')">
-                @csrf
-                @method('DELETE')
+        <form method="POST"
+              action="{{ route('admin.rewards.toggle',$reward) }}">
+            @csrf
+            <button class="btn-ui btn-gray">
+                Toggle
+            </button>
+        </form>
 
-                <button class="btn-ui btn-red">
-                    Hapus
-                </button>
-            </form>
-        </div>
+        <form method="POST"
+              action="{{ route('admin.rewards.delete',$reward) }}">
+            @csrf
+            @method('DELETE')
+            <button class="btn-ui btn-red">
+                Hapus
+            </button>
+        </form>
 
     </div>
-    @endforeach
+
+</div>
+@endforeach
 </div>
 <div class="data-table mt-16">
     <table>
-        <thead>
+       <thead>
 <tr>
     <th>No</th>
     <th>Tanggal</th>
     <th>User</th>
     <th>Hadiah</th>
+    <th>Poin</th>
     <th>Kode Redeem</th>
-    <th>Kode QR</th>
+    <th>QR</th>
     <th>Status</th>
 </tr>
 </thead>
+
+<tbody>
+@foreach($redemptions as $i => $item)
+<tr>
+
+<td>{{ $i+1 }}</td>
+
+<td>
+{{ optional($item->redeemed_at)->format('d M Y H:i') }}
+</td>
+
+<td>
+{{ $item->user?->name }}
+</td>
+
+<td>
+{{ $item->reward?->title }}
+</td>
+
+<td>
+{{ $item->reward?->points_required }}
+</td>
+
+<td>
+<span class="facility-chip">
+{{ $item->redeem_code ?? '-' }}
+</span>
+</td>
+
+<td>
+@if($item->qr_code)
+<img src="{{ asset($item->qr_code) }}"
+     width="70"
+     alt="QR">
+@else
+-
+@endif
+</td>
+
+<td>
+<span class="facility-chip">
+{{ $item->status }}
+</span>
+</td>
+
+</tr>
+@endforeach
+</tbody>
         <tbody>
             @foreach($redemptions as $i => $item)
-            <tr><td>{{ $i + 1 }}</td><td>{{ optional($item->redeemed_at)->format('d M Y H:i') }}</td><td>{{ $item->user?->name }}</td><td>{{ $item->reward?->title }}</td><td>{{ $item->redeem_code }}</td>
-<td>{{ $item->qr_code }}</td><td>{{ $item->status }}</td></tr>
+            <tr><td>{{ $i + 1 }}</td><td>{{ optional($item->redeemed_at)->format('d M Y H:i') }}</td><td>{{ $item->user?->name }}</td><td>{{ $item->reward?->title }}</td><td>
+    <span class="facility-chip">
+        {{ $item->redeem_code }}
+    </span>
+</td>
+<td>
+
+@if($item->qr_code)
+
+<img
+    src="{{ asset($item->qr_code) }}"
+    width="80"
+    alt="QR">
+
+@endif
+
+</td><td>{{ $item->status }}</td></tr>
             @endforeach
         </tbody>
     </table>

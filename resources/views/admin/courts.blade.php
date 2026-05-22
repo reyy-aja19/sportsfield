@@ -13,21 +13,55 @@
         @endphp
         <div class="court-card court-card-modern {{ $loop->first ? 'featured' : '' }}" data-search-item>
             <div class="court-slider" data-slider>
-                <div class="court-slide-track">
-                    @forelse($gallery as $photo)
-                        <img class="court-photo slide-photo {{ $loop->first ? 'active' : '' }}" src="{{ asset($photo) }}" alt="{{ $court->nama }}">
-                    @empty
-                        <div class="court-image {{ strtolower($court->jenis) === 'futsal' ? 'futsal' : '' }} slide-photo active">
-                            <i class="fa-solid {{ $fallbackIcon }} court-empty-icon"></i>
-                        </div>
-                    @endforelse
-                </div>
-                @if($gallery->count() > 1)
-                    <button type="button" class="slider-btn prev" data-slide-prev><i class="fa-solid fa-chevron-left"></i></button>
-                    <button type="button" class="slider-btn next" data-slide-next><i class="fa-solid fa-chevron-right"></i></button>
-                    <div class="slider-count"><span data-slide-current>1</span>/{{ $gallery->count() }}</div>
-                @endif
+
+    <div class="court-slide-track">
+
+        @forelse($gallery as $photo)
+
+            <img
+                class="court-photo slide-photo {{ $loop->index==0 ? 'active' : '' }}"
+                src="{{ asset($photo) }}"
+                alt="{{ $court->nama }}"
+            >
+
+        @empty
+
+            <div class="court-image slide-photo active">
+                <i class="fa-solid {{ $fallbackIcon }} court-empty-icon"></i>
             </div>
+
+        @endforelse
+
+    </div>
+
+    @if($gallery->count() > 1)
+
+        <button
+            type="button"
+            class="slider-btn prev"
+            data-slide-prev>
+
+            <i class="fa-solid fa-chevron-left"></i>
+
+        </button>
+
+        <button
+            type="button"
+            class="slider-btn next"
+            data-slide-next>
+
+            <i class="fa-solid fa-chevron-right"></i>
+
+        </button>
+
+        <div class="slider-count">
+            <span data-slide-current>1</span>
+            / {{ $gallery->count() }}
+        </div>
+
+    @endif
+
+</div>
 
             <div class="court-info" style="flex:1;">
                 <h3>{{ $court->nama }}</h3>

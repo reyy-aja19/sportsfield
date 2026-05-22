@@ -1632,3 +1632,91 @@ body {
 .openmatch-create-btn i{
     font-size:13px;
 }
+/* SLIDER LAPANGAN */
+.court-slider{
+    position: relative;
+    width: 320px;
+    height: 220px;
+    overflow: hidden;
+    border-radius: 16px;
+}
+
+.court-slide-track{
+    width:100%;
+    height:100%;
+    position:relative;
+}
+
+.slide-photo{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+
+    position:absolute;
+    top:0;
+    left:0;
+
+    opacity:0;
+    transition:opacity .4s ease;
+}
+
+.slide-photo.active{
+    opacity:1;
+    z-index:2;
+}
+
+.slider-btn{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    z-index:5;
+}
+
+.slider-btn.prev{
+    left:10px;
+}
+
+.slider-btn.next{
+    right:10px;
+}
+
+.slider-count{
+    position:absolute;
+    bottom:10px;
+    right:10px;
+    z-index:5;
+}
+.reward-photo{
+    width:100%;
+    height:180px;
+    object-fit:cover;
+    border-radius:12px;
+    display:block;
+}
+
+.reward-card{
+    overflow:hidden;
+}
+
+.preview-img{
+    width:100%;
+    max-height:180px;
+    object-fit:cover;
+    border-radius:12px;
+}
+
+.preview-shell.has-image .preview-img{
+    display:block !important;
+}
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
