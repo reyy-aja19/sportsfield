@@ -1,4 +1,3 @@
-# Dockerfile
 FROM php:8.2-fpm-alpine
 
 # Install dependencies sistem
@@ -38,8 +37,13 @@ COPY . .
 # Install dependencies Laravel
 RUN composer install --optimize-autoloader --no-dev
 
-# Set permission
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# --- TAMBAHAN: BUILD ASET CSS/JS DI DALAM DOCKER ---
+RUN npm install
+RUN npm run build
+# ----------------------------------------------------
+
+# Set permission (Ditambahkan /public agar Nginx tidak 403 Forbidden)
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public
 
 # Copy konfigurasi Nginx dan Supervisor
 COPY docker/nginx.conf /etc/nginx/nginx.conf
