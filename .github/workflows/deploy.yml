@@ -125,7 +125,15 @@ jobs:
 
             echo "✅ MySQL ready"
 
-            # Migration + Seeder
+            # --- PAKSA REFRESH CONFIG CACHE SEBELUM MIGRATION ---
+            docker compose exec -T app php artisan config:clear
+            docker compose exec -T app php artisan route:clear
+            # ----------------------------------------------------
+
+            # Migration + Seeder (Sekarang pasti membaca user & password dari .env terbaru)
             docker compose exec -T app php artisan migrate --seed --force --no-interaction
+
+            # Tambahan pembersihan view di akhir
+            docker compose exec -T app php artisan view:clear
 
             echo "✅ Deployment selesai!"
