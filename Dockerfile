@@ -31,21 +31,23 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy file project
+# Copy project
 COPY . .
 
-# Install dependencies Laravel
+# Install dependency Laravel
 RUN composer install --optimize-autoloader --no-dev
 
-# --- TAMBAHAN: BUILD ASET CSS/JS DI DALAM DOCKER ---
+# Build asset Vite
 RUN npm install
 RUN npm run build
-# ----------------------------------------------------
 
-# Set permission (Ditambahkan /public agar Nginx tidak 403 Forbidden)
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public
+# Permission
+RUN chown -R www-data:www-data \
+    /var/www/html/storage \
+    /var/www/html/bootstrap/cache \
+    /var/www/html/public
 
-# Copy konfigurasi Nginx dan Supervisor
+# Nginx + Supervisor
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 

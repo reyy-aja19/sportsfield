@@ -3,8 +3,6 @@
 @section('content')
 
 <div class="panel-card">
-    <h2>Management Admin</h2>
-
     <div class="data-table">
         <table>
             <thead>

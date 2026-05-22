@@ -18,23 +18,36 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $admin = User::updateOrCreate(
-            ['email' => 'admin@gmail.com'],
-            [
-                'name' => 'Super Admin',
-                'password' => Hash::make('admin123'),
-                'role' => 'admin',
-                'phone' => '0812-3456-7890',
-                'points' => 0,
-                'status' => 'Aktif',
-            ]
-        );
+    ['email' => 'admin@gmail.com'],
+    [
+        'name' => 'Admin',
+        'password' => Hash::make('admin123'),
+        'role' => 'admin',
+        'phone' => '081234567890',
+        'points' => 0,
+        'status' => 'Aktif',
+    ]
+);
+
+$superAdmin = User::updateOrCreate(
+    ['email' => 'superadmin@gmail.com'],
+    [
+        'name' => 'Super Admin',
+        'password' => Hash::make('12345678'),
+        'role' => 'superadmin',
+        'phone' => '089876543210',
+        'points' => 0,
+        'status' => 'Aktif',
+    ]
+);
 
         $users = collect([
-            ['name' => 'Restu', 'email' => 'restu@gmail.com', 'phone' => '0811111111', 'points' => 10, 'status' => 'Aktif'],
+            ['name' => 'agung', 'email' => 'akunstreet3@gmail.com', 'phone' => '0855555555', 'points' => 100, 'status' => 'Aktif'],
             ['name' => 'Reyhan', 'email' => 'reyhan@gmail.com', 'phone' => '0822222222', 'points' => 15, 'status' => 'Aktif'],
             ['name' => 'Wendi', 'email' => 'wendi@gmail.com', 'phone' => '0833333333', 'points' => 5, 'status' => 'Aktif'],
             ['name' => 'Furab', 'email' => 'furab@gmail.com', 'phone' => '0844444444', 'points' => 7, 'status' => 'Aktif'],
             ['name' => 'AdiBurger', 'email' => 'adiburger@gmail.com', 'phone' => '0855555555', 'points' => 25, 'status' => 'Nonaktif'],
+            ['name' => 'Era', 'email' => 'rezaw1076@gmail.com', 'phone' => '0855555555', 'points' => 25, 'status' => 'Aktif'],
         ])->map(fn ($u) => User::updateOrCreate(
             ['email' => $u['email']],
             array_merge($u, ['password' => Hash::make('password123'), 'role' => 'user'])
@@ -104,11 +117,12 @@ class DatabaseSeeder extends Seeder
 ])->map(fn ($r) => Reward::updateOrCreate(['title' => $r['title']], $r));
 
         $bookingData = [
-            [$users[0], $courts[1], 'SayurDipay', '2026-04-10', '19:00', '20:00', 1, 'Lunas'],
+            [$users[0], $courts[1], 'Dana', '2026-04-10', '19:00', '20:00', 1, 'DP'],
             [$users[1], $courts[1], 'Dana', '2026-04-10', '11:00', '12:00', 1, 'Lunas'],
             [$users[2], $courts[0], 'ShopeePay', '2026-04-10', '08:00', '10:00', 2, 'DP'],
             [$users[3], $courts[2], 'BRI', '2026-04-11', '19:00', '20:00', 1, 'DP'],
             [$users[4], $courts[1], 'GoPay', '2026-04-10', '20:00', '22:00', 2, 'Lunas'],
+            [$users[5], $courts[1], 'GoPay', '2026-04-10', '20:00', '22:00', 2, 'DP'],
         ];
 
         foreach ($bookingData as [$user, $court, $method, $date, $start, $end, $hours, $status]) {

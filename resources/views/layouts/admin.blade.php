@@ -63,38 +63,47 @@
     </a>
 
     {{-- LAPANGAN --}}
-    <a class="sidebar-link {{ request()->routeIs('admin.courts*') ? 'active' : '' }}"
-       href="{{ route('admin.courts') }}">
-        <span class="menu-icon">
-            <i class="fa-solid fa-vector-square"></i>
+<a class="sidebar-link {{ request()->routeIs('admin.courts*') ? 'active' : '' }}"
+   href="{{ route('admin.courts') }}">
+    <span class="menu-icon">
+        <i class="fa-solid fa-vector-square"></i>
+    </span>
+    <span class="label">Management Lapangan</span>
+</a>
+
+{{-- BOOKING --}}
+<a class="sidebar-link {{ request()->routeIs('admin.bookings*') ? 'active' : '' }}"
+   href="{{ route('admin.bookings') }}">
+    <span class="menu-icon">
+        <i class="fa-solid fa-calendar-check"></i>
+    </span>
+    <span class="label">Management Booking</span>
+</a>
+
+{{-- OPEN MATCH --}}
+<a class="sidebar-link {{ request()->routeIs('admin.openmatches*') ? 'active' : '' }}"
+   href="{{ route('admin.openmatches') }}">
+    <span class="menu-icon">
+        <i class="fa-solid fa-people-group"></i>
+    </span>
+    <span class="label">Open Match</span>
+</a>
+
+{{-- REVIEW --}}
+<a class="sidebar-link {{ request()->routeIs('admin.reviews*') ? 'active' : '' }}"
+   href="{{ route('admin.reviews') }}">
+    <span class="menu-icon">
+        <i class="fa-regular fa-message"></i>
+    </span>
+
+    <span class="label">Review Komentar</span>
+
+    @if(($pendingReviewCount ?? 0) > 0)
+        <span class="menu-badge">
+            {{ $pendingReviewCount }}
         </span>
-        <span class="label">Management Lapangan</span>
-    </a>
-
-    {{-- OPEN MATCH --}}
-    <a class="sidebar-link {{ request()->routeIs('admin.openmatches*') ? 'active' : '' }}"
-       href="{{ route('admin.openmatches') }}">
-        <span class="menu-icon">
-            <i class="fa-solid fa-users-line"></i>
-        </span>
-        <span class="label">Open Match</span>
-    </a>
-
-    {{-- REVIEW --}}
-    <a class="sidebar-link {{ request()->routeIs('admin.reviews*') ? 'active' : '' }}"
-       href="{{ route('admin.reviews') }}">
-        <span class="menu-icon">
-            <i class="fa-regular fa-message"></i>
-        </span>
-
-        <span class="label">Review Komentar</span>
-
-        @if(($pendingReviewCount ?? 0) > 0)
-            <span class="menu-badge">
-                {{ $pendingReviewCount }}
-            </span>
-        @endif
-    </a>
+    @endif
+</a>
 
     {{-- REWARD --}}
     <a class="sidebar-link {{ request()->routeIs('admin.rewards*') ? 'active' : '' }}"

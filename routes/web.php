@@ -70,6 +70,16 @@ Route::delete('/lapangan/{lapangan}', [AdminController::class, 'courtDelete'])->
     Route::post('/booking', [AdminController::class, 'bookingStore'])->name('bookings.store');
     Route::post('/booking/{booking}/toggle', [AdminController::class, 'bookingToggle'])->name('bookings.toggle');
     Route::delete('/booking/{booking}', [AdminController::class, 'bookingDelete'])->name('bookings.delete');
+    Route::post(
+'/booking/{booking}/checkin',
+[AdminController::class,'checkin']
+)->name('bookings.checkin');
+
+
+Route::post(
+'/booking/{booking}/checkout',
+[AdminController::class,'checkout']
+)->name('bookings.checkout');
 
     Route::get('/open-match', [AdminController::class, 'openMatches'])->name('openmatches');
     Route::post('/open-match', [AdminController::class, 'openMatchStore'])->name('openmatches.store');

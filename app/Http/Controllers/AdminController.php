@@ -13,14 +13,14 @@ use App\Models\User;
 use App\Models\Venue;
 use App\Models\Facility;
 use App\Models\AdminRequest;
+use App\Mail\BookingConfirmedMail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -112,12 +112,16 @@ class AdminController extends Controller
     {
         $pendingReviewCount = Review::whereNull('reply_message')->count();
         $pendingPaymentCount = Payment::where('status', '!=', 'Lunas')->count();
+        $pendingBookingCount =
+Booking::where('status','Menunggu')
+->count();
 
         $notifications = collect()
             ->merge(Review::with(['user', 'lapangan'])
                 ->whereNull('reply_message')
                 ->latest()
-                ->get()
+->take(10)
+->get()
                 ->map(function ($review) {
                     return [
                         'type' => 'review',
@@ -151,7 +155,12 @@ class AdminController extends Controller
             'adminUser' => $this->adminUser($request),
             'pendingReviewCount' => $pendingReviewCount,
             'pendingPaymentCount' => $pendingPaymentCount,
-            'totalNotificationCount' => $pendingReviewCount + $pendingPaymentCount,
+           'pendingBookingCount'=>$pendingBookingCount,
+
+'totalNotificationCount'=>
+$pendingReviewCount +
+$pendingPaymentCount +
+$pendingBookingCount,
             'notifications' => $notifications,
         ], $extra);
     }
@@ -159,9 +168,12 @@ class AdminController extends Controller
     public function dashboard(Request $request): View
     {
         $admin = $this->adminUser($request);
-        
-        // Perbaikan: Inisialisasi variabel courtStatus untuk dikirim ke view layoutData
-        $courtStatus = 'Buka';
+
+if (!$admin) {
+    return redirect()->route('login');
+}
+
+$courtStatus = 'Buka';
 
         // venue milik admin login
         $adminVenueIds = Venue::where('user_id', $admin->id)
@@ -371,15 +383,7 @@ class AdminController extends Controller
                 $months
             ),
 
-            'userRatio' => $pieData, [
-                User::where('role', 'user')
-                    ->where('status', 'Aktif')
-                    ->count(),
-
-                User::where('role', 'user')
-                    ->where('status', '!=', 'Aktif')
-                    ->count(),
-            ],
+            'userRatio' => $pieData,
 
         ]));
     }
@@ -570,9 +574,19 @@ class AdminController extends Controller
             $data['foto'] = $this->publicUpload($request, 'foto', 'lapangan');
         }
 
-        $existingGallery = $lapangan->foto_gallery ?? [];
-        $newGallery = $this->publicUploadMultiple($request, 'foto_gallery', 'lapangan');
-        $data['foto_gallery'] = array_values(array_filter(array_merge($existingGallery, $newGallery)));
+       if ($request->hasFile('foto_gallery')) {
+
+    foreach (($lapangan->foto_gallery ?? []) as $gallery) {
+        $this->deletePublicUpload($gallery);
+    }
+
+    $data['foto_gallery'] =
+        $this->publicUploadMultiple(
+            $request,
+            'foto_gallery',
+            'lapangan'
+        );
+}
         $data['fasilitas'] = $this->normalizeFacilities($request->input('fasilitas', []));
         foreach ($data['fasilitas'] as $facilityName) {
             Facility::firstOrCreate([
@@ -629,23 +643,56 @@ class AdminController extends Controller
     }
 
     public function bookingToggle(Booking $booking): RedirectResponse
-    {
-        $booking->status = $booking->status === 'Lunas' ? 'DP' : 'Lunas';
-        $booking->save();
-        if ($booking->payment) {
-            $booking->payment->update([
-                'status' => $booking->status === 'Lunas' ? 'Lunas' : 'Menunggu',
-                'paid_at' => $booking->status === 'Lunas' ? now() : null,
-            ]);
-        }
-        return back()->with('success', 'Status booking berhasil diperbarui.');
+{
+    if ($booking->status === 'Check In' ||
+    $booking->status === 'Check Out') {
+
+    return back()->with(
+        'error',
+        'Booking sedang berlangsung'
+    );
+}
+
+    $booking->status =
+        $booking->status === 'Lunas'
+            ? 'DP'
+            : 'Lunas';
+
+    $booking->save();
+
+    if ($booking->payment) {
+        $booking->payment->update([
+            'status' => $booking->status === 'Lunas'
+                ? 'Lunas'
+                : 'Menunggu',
+
+            'paid_at' => $booking->status === 'Lunas'
+                ? now()
+                : null,
+        ]);
     }
 
-    public function bookingDelete(Booking $booking): RedirectResponse
-    {
-        $booking->delete();
-        return back()->with('success', 'Booking berhasil dihapus.');
+    return back()->with(
+        'success',
+        'Status booking berhasil diperbarui.'
+    );
+}
+
+   public function bookingDelete(
+    Booking $booking
+): RedirectResponse
+{
+    if ($booking->payment) {
+        $booking->payment->delete();
     }
+
+    $booking->delete();
+
+    return back()->with(
+        'success',
+        'Booking berhasil dihapus.'
+    );
+}
 
     public function openMatches(Request $request): View
     {
@@ -820,24 +867,38 @@ class AdminController extends Controller
             return back()->with('error', 'Stok reward habis');
         }
 
+        if (!$user) {
+    return back()->with(
+        'error',
+        'User tidak ditemukan'
+    );
+}
+
         if ($user->points < $reward->points_required) {
-            return back()->with('error', 'Poin tidak cukup');
-        }
+    return back()->with(
+        'error',
+        'Poin tidak mencukupi'
+    );
+}
 
-        DB::transaction(function () use ($user, $reward) {
-            $user->decrement('points', $reward->points_required);
-            $reward->decrement('stock');
+DB::transaction(function () use ($user, $reward) {
 
-            Redemption::create([
-                'user_id' => $user->id,
-                'reward_id' => $reward->id,
-                'redeemed_at' => now(),
-                'qr_code' => strtoupper(Str::random(10)),
-                'redeem_code' => 'RDM-' . strtoupper(Str::random(6)),
-                'status' => 'Pending',
-            ]);
-        });
+    $user->decrement(
+        'points',
+        $reward->points_required
+    );
 
+    $reward->decrement('stock');
+
+    Redemption::create([
+        'user_id' => $user->id,
+        'reward_id' => $reward->id,
+        'redeemed_at' => now(),
+        'qr_code' => strtoupper(Str::random(10)),
+        'redeem_code' => 'RDM-' . strtoupper(Str::random(6)),
+        'status' => 'Pending',
+    ]);
+});
         return back()->with('success', 'Reward berhasil diredeem');
     }
 
@@ -847,14 +908,52 @@ class AdminController extends Controller
         return view('admin.payments', $this->layoutData($request, compact('payments')));
     }
 
-    public function paymentVerify(Payment $payment): RedirectResponse
-    {
-        $payment->update(['status' => 'Lunas', 'paid_at' => now()]);
-        if ($payment->booking) {
-            $payment->booking->update(['status' => 'Lunas']);
+   public function paymentVerify(Payment $payment): RedirectResponse
+{
+    $payment->update([
+        'status' => 'Lunas',
+        'paid_at' => now()
+    ]);
+
+    if ($payment->booking) {
+
+        $payment->booking->update([
+            'status' => 'Lunas'
+        ]);
+
+        if ($payment->user) {
+
+            $booking = $payment->booking->load([
+                'user',
+                'lapangan'
+            ]);
+
+            try {
+
+              \Log::info([
+    'payment_id' => $payment->id,
+    'user_id' => $payment->user_id,
+    'email' => $payment->user?->email,
+    'nama' => $payment->user?->name,
+]);
+
+Mail::to($payment->user->email)
+    ->send(new BookingConfirmedMail($booking));
+
+            } catch (\Exception $e) {
+
+                \Log::error(
+                    'Mail error: '.$e->getMessage()
+                );
+            }
         }
-        return back()->with('success', 'Pembayaran berhasil diverifikasi.');
     }
+
+    return back()->with(
+        'success',
+        'Pembayaran berhasil diverifikasi.'
+    );
+}
 
     public function reports(Request $request): View
     {
@@ -1034,4 +1133,65 @@ class AdminController extends Controller
             ])
         );
     }
+
+    public function checkin(
+    Booking $booking
+)
+{
+    if (!in_array($booking->status, ['Lunas'])) {
+    return back()->with(
+        'error',
+        'Booking belum dapat check in'
+    );
+}
+
+    if ($booking->checkin_at) {
+
+        return back()->with(
+            'error',
+            'User sudah check in'
+        );
+    }
+
+    $booking->update([
+        'status' => 'Check In',
+        'checkin_at' => now()
+    ]);
+
+    return back()->with(
+        'success',
+        'User berhasil check in'
+    );
+}
+
+
+public function checkout(
+    Booking $booking
+)
+{
+   if ($booking->status !== 'Check In') {
+    return back()->with(
+        'error',
+        'User belum check in'
+    );
+}
+
+    if ($booking->checkout_at) {
+
+        return back()->with(
+            'error',
+            'User sudah check out'
+        );
+    }
+
+    $booking->update([
+        'status' => 'Check Out',
+        'checkout_at' => now()
+    ]);
+
+    return back()->with(
+        'success',
+        'User berhasil check out'
+    );
+}
 }

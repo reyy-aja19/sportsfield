@@ -19,13 +19,20 @@ class Booking extends Model
         'hours',
         'total_price',
         'status',
+        'checkin_at',
+        'checkout_at'
     ];
 
     protected function casts(): array
     {
-        return [
-            'booking_date' => 'date',
-        ];
+       return [
+
+        'booking_date'=>'date',
+
+        'checkin_at'=>'datetime',
+
+        'checkout_at'=>'datetime'
+    ];
     }
 
     public function user()

@@ -26,9 +26,98 @@
                 <td>{{ $booking->lapangan?->nama }}</td>
                 <td>{{ $booking->booking_date->format('d M Y') }} {{ $booking->start_time }}-{{ $booking->end_time }}</td>
                 <td>Rp {{ number_format($booking->total_price,0,',','.') }}</td>
-                <td>{{ $booking->status }}</td>
-                <td><div class="btn-row wrap"><form method="POST" action="{{ route('admin.bookings.toggle', $booking) }}">@csrf<button class="btn-ui btn-gray">Toggle</button></form><form method="POST" action="{{ route('admin.bookings.delete', $booking) }}" onsubmit="return confirm('Hapus booking ini?')">@csrf @method('DELETE')<button class="btn-ui btn-red">Hapus</button></form></div></td>
-            </tr>
+                <td>
+
+@if($booking->status=='DP')
+<span class="badge warning">
+DP
+</span>
+
+@elseif($booking->status=='Lunas')
+<span class="badge success">
+Lunas
+</span>
+
+@elseif($booking->status=='Check In')
+<span class="badge primary">
+Sedang Main
+</span>
+
+@elseif($booking->status=='Check Out')
+<span class="badge dark">
+Selesai
+</span>
+
+@else
+<span class="badge">
+{{ $booking->status }}
+</span>
+@endif
+
+</td>
+                <td>
+
+                <div class="btn-row wrap">
+
+                {{-- jika lunas bisa checkin --}}
+                @if($booking->status=='Lunas')
+
+                <form method="POST"
+                action="{{ route('admin.bookings.checkin',$booking) }}">
+
+                @csrf
+
+                <button class="btn-ui btn-green">
+
+                <i class="fa-solid fa-right-to-bracket"></i>
+                Check In
+
+                </button>
+
+                </form>
+
+                @endif
+
+
+                {{-- jika sedang bermain bisa checkout --}}
+                @if($booking->status=='Check In')
+
+                <form method="POST"
+                action="{{ route('admin.bookings.checkout',$booking) }}">
+
+                @csrf
+
+                <button class="btn-ui btn-gray">
+
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Check Out
+
+                </button>
+
+                </form>
+
+                @endif
+
+
+                <form method="POST"
+                action="{{ route('admin.bookings.delete',$booking) }}"
+                onsubmit="return confirm('Hapus booking ini?')">
+
+                @csrf
+                @method('DELETE')
+
+                <button class="btn-ui btn-red">
+
+                <i class="fa-solid fa-trash"></i>
+                Hapus
+
+                </button>
+
+                </form>
+
+                </div>
+
+                </td>            </tr>
             @endforeach
         </tbody>
     </table>
