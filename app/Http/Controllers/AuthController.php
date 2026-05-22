@@ -8,6 +8,80 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | API METHODS (Untuk Aplikasi Mobile)
+    |--------------------------------------------------------------------------
+    */
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|unique:users',
+            'password' => 'required|string|min:8',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => $request->password, // Otomatis di-hash oleh properti casts di model User
+            'role' => $request->role ?? 'user',
+            'phone' => $request->phone,
+            'status' => 'Aktif',
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Registrasi berhasil',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'data' => $user
+        ], 201);
+    }
+
+    public function loginApi(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Email atau password salah.'
+            ], 401);
+        }
+
+        if ($user->status !== 'Aktif') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Akun Anda sedang nonaktif.'
+            ], 403);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Login berhasil',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'data' => $user
+        ], 200);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | WEB METHODS (Bawaan Admin Web - JANGAN DIUBAH)
+    |--------------------------------------------------------------------------
+    */
+
     public function showLogin(Request $request)
     {
         if ($request->session()->has('admin_logged_in')) {
