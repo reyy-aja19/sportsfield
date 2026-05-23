@@ -54,39 +54,26 @@ class LapanganController extends Controller
             'fasilitas' => 'nullable|array',
         ]);
 
-        // upload foto utama
         if ($request->hasFile('foto')) {
-
             $file = $request->file('foto');
-
-            $filename = time().'_'.$file->getClientOriginalName();
-
+            $filename = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/lapangan'), $filename);
-
             $data['foto'] = $filename;
         }
 
-        // upload gallery
         $gallery = [];
-
         if ($request->hasFile('foto_gallery')) {
-
             foreach ($request->file('foto_gallery') as $image) {
-
-                $galleryName = time().'_'.$image->getClientOriginalName();
-
+                $galleryName = time() . '_' . $image->getClientOriginalName();
                 $image->move(public_path('uploads/lapangan'), $galleryName);
-
                 $gallery[] = $galleryName;
             }
         }
 
         $data['foto_gallery'] = $gallery;
-
         Lapangan::create($data);
 
-        return redirect('/lapangan')
-            ->with('success', 'Data berhasil ditambah');
+        return redirect('/lapangan')->with('success', 'Data berhasil ditambah');
     }
 
     /**
@@ -134,39 +121,26 @@ class LapanganController extends Controller
             'fasilitas' => 'nullable|array',
         ]);
 
-        // update foto utama
         if ($request->hasFile('foto')) {
-
             $file = $request->file('foto');
-
-            $filename = time().'_'.$file->getClientOriginalName();
-
+            $filename = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('uploads/lapangan'), $filename);
-
             $data['foto'] = $filename;
         }
 
-        // update gallery
         if ($request->hasFile('foto_gallery')) {
-
             $gallery = [];
-
             foreach ($request->file('foto_gallery') as $image) {
-
-                $galleryName = time().'_'.$image->getClientOriginalName();
-
+                $galleryName = time() . '_' . $image->getClientOriginalName();
                 $image->move(public_path('uploads/lapangan'), $galleryName);
-
                 $gallery[] = $galleryName;
             }
-
             $data['foto_gallery'] = $gallery;
         }
 
         $lapangan->update($data);
 
-        return redirect('/lapangan')
-            ->with('success', 'Data berhasil diupdate');
+        return redirect('/lapangan')->with('success', 'Data berhasil diupdate');
     }
 
     /**
@@ -175,16 +149,14 @@ class LapanganController extends Controller
     public function destroy($id)
     {
         Lapangan::destroy($id);
-
-        return redirect('/lapangan')
-            ->with('success', 'Data berhasil dihapus');
+        return redirect('/lapangan')->with('success', 'Data berhasil dihapus');
     }
 
     /*
     |--------------------------------------------------------------------------
     | API METHODS (Untuk Kebutuhan Flutter / Mobile)
     |--------------------------------------------------------------------------
-    */
+    |*/
 
     public function apiIndex()
     {
@@ -237,28 +209,88 @@ class LapanganController extends Controller
 
     public function apiStoreBooking(Request $request)
     {
+        // 1. Validasi Request disesuaikan dengan data yang dikirim Flutter & Kebutuhan DB
         $request->validate([
-            'lapangan_id' => 'required|integer',
-            'tanggal' => 'required|date',
-            'start_time' => 'required',
-            'end_time' => 'required',
-            'total_harga' => 'required',
+            'lapangan_id'    => 'required|integer',
+            'payment_method' => 'nullable|string',
+            'date'           => 'required|date',
+            'start_time'     => 'required',
+            'end_time'       => 'nullable|string',
+            'total_price'    => 'required',
         ]);
 
+        // Proteksi pencarian User ID (Gunakan token auth jika ada, jika tidak pakai userId manual)
+        $userId = $request->user() ? $request->user()->id : ($request->userId ?? $request->user_id ?? 1);
+
+        // 2. Simpan data booking awal ke database
         $booking = \App\Models\Booking::create([
-            'user_id' => $request->user()->id,
-            'lapangan_id' => $request->lapangan_id,
-            'tanggal' => $request->tanggal,
-            'start_time' => $request->start_time,
-            'end_time' => $request->end_time,
-            'total_harga' => $request->total_harga,
-            'status' => 'Pending',
+            'user_id'        => $userId,
+            'lapangan_id'    => $request->lapangan_id,
+            'tanggal'        => $request->date,
+            'start_time'     => $request->start_time,
+            'end_time'       => $request->end_time ?? '',
+            'total_harga'    => $request->total_price,
+            'status'         => 'Pending',
+            'payment_method' => $request->payment_method ?? 'Transfer Bank (VA)',
         ]);
 
+        // Buat Order ID unik untuk dikirimkan ke Midtrans
+        $orderId = 'BOOK-' . time() . '-' . $booking->id;
+
+        // 3. Logika Midtrans jika metode pembayaran menggunakan online (bukan Tunai)
+        if ($request->payment_method !== 'Tunai di Tempat') {
+
+            // Set konfigurasi Midtrans langsung menggunakan config/services.php
+            \Midtrans\Config::$serverKey    = config('services.midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('services.midtrans.is_production');
+            \Midtrans\Config::$isSanitized  = config('services.midtrans.is_sanitized');
+            \Midtrans\Config::$is3ds        = config('services.midtrans.is_3ds');
+
+            // Susun payload parameter transaksi untuk Midtrans
+            $params = [
+                'transaction_details' => [
+                    'order_id'     => $orderId,
+                    'gross_amount' => (int) $request->total_price,
+                ],
+                'item_details' => [
+                    [
+                        'id'       => $request->lapangan_id,
+                        'price'    => (int) $request->total_price,
+                        'quantity' => 1,
+                        'name'     => 'Sewa Lapangan ID: ' . $request->lapangan_id,
+                    ]
+                ],
+                'customer_details' => [
+                    'first_name' => 'User ID: ' . $userId,
+                ],
+            ];
+
+            try {
+                // Request ke Midtrans menggunakan core method resmi SDK
+                $response = \Midtrans\Snap::createTransaction($params);
+                $redirectUrl = $response->redirect_url;
+
+                return response()->json([
+                    'status'         => true,
+                    'message'        => 'Booking berhasil dibuat, silakan selesaikan pembayaran.',
+                    'current_points' => ($request->user() ? $request->user()->points : 0) + 5,
+                    'redirect_url'   => $redirectUrl,
+                    'data'           => $booking
+                ], 201);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Gagal menghubungkan ke Midtrans: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+
+        // 4. Response jika user memilih pembayaran offline "Tunai di Tempat"
         return response()->json([
-            'status' => true,
-            'message' => 'Booking berhasil dibuat',
-            'data' => $booking
+            'status'         => true,
+            'message'        => 'Booking tunai berhasil dibuat.',
+            'current_points' => ($request->user() ? $request->user()->points : 0) + 5,
+            'data'           => $booking
         ], 201);
     }
 
@@ -278,5 +310,39 @@ class LapanganController extends Controller
             'message' => 'Status booking berhasil diperbarui',
             'data' => $booking
         ], 200);
+    }
+
+    /**
+     * Webhook/Callback Otomatis dari Server Midtrans untuk update status Lunas
+     */
+    public function midtransCallback(Request $request)
+    {
+        $serverKey = config('services.midtrans.server_key');
+        $hashedKey = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
+
+        if ($hashedKey !== $request->signature_key) {
+            return response()->json(['message' => 'Invalid Signature'], 403);
+        }
+
+        $orderParts = explode('-', $request->order_id);
+        $bookingId = end($orderParts);
+
+        $booking = \App\Models\Booking::find($bookingId);
+
+        if (!$booking) {
+            return response()->json(['message' => 'Booking not found'], 404);
+        }
+
+        $transactionStatus = $request->transaction_status;
+
+        if ($transactionStatus == 'settlement' || $transactionStatus == 'capture') {
+            $booking->update(['status' => 'Lunas']);
+        } elseif ($transactionStatus == 'pending') {
+            $booking->update(['status' => 'Pending']);
+        } elseif ($transactionStatus == 'deny' || $transactionStatus == 'expire' || $transactionStatus == 'cancel') {
+            $booking->update(['status' => 'Expired']);
+        }
+
+        return response()->json(['message' => 'Callback processed successfully'], 200);
     }
 }
