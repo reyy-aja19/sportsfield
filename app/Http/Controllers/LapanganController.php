@@ -229,7 +229,7 @@ class LapanganController extends Controller
             'booking_date'        => $request->date,
             'start_time'     => $request->start_time,
             'end_time'       => $request->end_time ?? '',
-            'total_harga'    => $request->total_price,
+            'total_price'    => $request->total_price,
             'status'         => 'Pending',
             'payment_method' => $request->payment_method ?? 'Transfer Bank (VA)',
         ]);
