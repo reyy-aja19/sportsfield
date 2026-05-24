@@ -226,7 +226,7 @@ class LapanganController extends Controller
         $booking = \App\Models\Booking::create([
             'user_id'        => $userId,
             'lapangan_id'    => $request->lapangan_id,
-            'tanggal'        => $request->date,
+            'booking_date'        => $request->date,
             'start_time'     => $request->start_time,
             'end_time'       => $request->end_time ?? '',
             'total_harga'    => $request->total_price,
