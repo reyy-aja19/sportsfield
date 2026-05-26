@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use Illuminate\Http\Request;
+use App\Mail\BookingConfirmedMail;
+use Illuminate\Support\Facades\Mail;
 
 class PaymentController extends Controller
 {
@@ -42,14 +44,74 @@ class PaymentController extends Controller
         }
     }
 
-    public function verify($id)
-    {
-        $booking = \App\Models\Booking::findOrFail($id);
+   public function verify($id)
+{
+    $booking = \App\Models\Booking::with([
+        'user',
+        'lapangan'
+    ])->findOrFail($id);
 
-        $booking->update([
-            'status' => 'Lunas' // Sesuaikan dengan enum status lu
-        ]);
+    $booking->update([
+        'status' => 'Lunas'
+    ]);
 
-        return redirect()->back()->with('success', 'Pembayaran berhasil diverifikasi!');
+    // kirim email
+    try {
+
+        if ($booking->user?->email) {
+
+            Mail::to($booking->user->email)
+                ->send(
+                    new BookingConfirmedMail($booking)
+                );
+        }
+
+    } catch (\Exception $e) {
+
+        \Log::error(
+            'Mail error: ' . $e->getMessage()
+        );
     }
+
+    return redirect()
+        ->back()
+        ->with(
+            'success',
+            'Pembayaran berhasil diverifikasi!'
+        );
+}
+
+   public function paymentSuccess(Request $request)
+{
+    $booking = Booking::with([
+        'user',
+        'lapangan'
+    ])->findOrFail($request->booking_id);
+
+    $booking->update([
+        'status' => 'Lunas'
+    ]);
+
+    try {
+
+        if ($booking->user?->email) {
+
+            Mail::to($booking->user->email)
+                ->send(
+                    new BookingConfirmedMail($booking)
+                );
+        }
+
+    } catch (\Exception $e) {
+
+        \Log::error(
+            'Mail error: ' . $e->getMessage()
+        );
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Pembayaran berhasil'
+    ]);
+}
 }

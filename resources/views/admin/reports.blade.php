@@ -129,9 +129,13 @@
                         {{ $i + 1 }}
                     </td>
 
-                    <td>
-                        {{ optional($report->created_at)->format('d M Y H:i') }}
-                    </td>
+                   <td>
+    {{
+        $report->paid_at
+        ? \Carbon\Carbon::parse($report->paid_at)->format('d M Y H:i')
+        : optional($report->created_at)->format('d M Y H:i')
+    }}
+</td>
 
                     <td>
                         {{ $report->user?->name ?? '-' }}

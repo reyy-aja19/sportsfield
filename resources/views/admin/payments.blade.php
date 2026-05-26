@@ -1,8 +1,12 @@
-@extends('layouts.admin', ['title' => 'Pembayaran', 'heading' => 'Pembayaran'])
+@extends('layouts.admin', [
+    'title' => 'Pembayaran',
+    'heading' => 'Pembayaran'
+])
 
 @section('content')
 
 <div class="data-table">
+
     <table>
 
         <thead>
@@ -14,93 +18,89 @@
                 <th>Metode</th>
                 <th>Total</th>
                 <th>Status</th>
-                <th>Bukti</th>
                 <th>Aksi</th>
             </tr>
         </thead>
 
         <tbody>
 
-            @forelse($payments as $i => $payment)
+        @forelse($payments as $i => $payment)
 
-            <tr>
+        <tr>
 
-                <td>{{ $i + 1 }}</td>
+            <td>{{ $i + 1 }}</td>
 
-                <td>
-                    {{ $payment->user?->name }}
-                </td>
+            <td>
+                {{ $payment->user?->name }}
+            </td>
 
-                <td>
-                    {{ $payment->booking?->lapangan?->nama }}
-                </td>
+            <td>
+                {{ $payment->booking?->lapangan?->nama }}
+            </td>
 
-                <td>
-                    {{ optional($payment->booking?->booking_date)->format('d M Y') }}
-                    <br>
-                    <small>
-                        {{ $payment->booking?->start_time }}
-                        -
-                        {{ $payment->booking?->end_time }}
-                    </small>
-                </td>
+            <td>
+                {{ optional($payment->booking?->booking_date)->format('d M Y') }}
+                <br>
 
-                <td>
-                    {{ $payment->method }}
-                </td>
+                <small>
+                    {{ $payment->booking?->start_time }}
+                    -
+                    {{ $payment->booking?->end_time }}
+                </small>
+            </td>
 
-                <td>
-                    Rp {{ number_format($payment->amount, 0, ',', '.') }}
-                </td>
+            <td>
+                {{ $payment->method }}
+            </td>
 
-                <td>
+            <td>
+                Rp {{ number_format($payment->amount, 0, ',', '.') }}
+            </td>
 
-                    @if($payment->status === 'Lunas')
-                        <span class="status-active">
-                            Lunas
-                        </span>
+            <td>
 
-                    @elseif($payment->status === 'DP')
-                        <span class="status-pending">
-                            DP
-                        </span>
+                @if($payment->status === 'Lunas')
 
-                    @else
-                        <span class="status-inactive">
-                            Menunggu
-                        </span>
-                    @endif
+                    <span class="status-active">
+                        Lunas
+                    </span>
 
-                </td>
+                @elseif($payment->status === 'DP')
 
-                <td>
+                    <span class="status-pending">
+                        DP
+                    </span>
 
-                    @if($payment->proof_image)
+                @elseif($payment->status === 'Menunggu Verifikasi')
 
-                        <a
-                            href="{{ asset($payment->proof_image) }}"
-                            target="_blank"
-                            class="btn-ui btn-gray">
-                            Lihat
-                        </a>
+                    <span class="status-pending">
+                        Menunggu Verifikasi
+                    </span>
 
-                    @else
+                @else
 
-                        <span class="muted">
-                            Tidak ada
-                        </span>
+                    <span class="status-inactive">
+                        Pending
+                    </span>
 
-                    @endif
+                @endif
 
-                </td>
+            </td>
 
-                <td>
 
-                    @if(
-                        $payment->status !== 'Lunas'
-                        &&
-                        $payment->method !== 'Bayar di Tempat'
-                    )
+            <td>
+
+                {{-- MIDTRANS --}}
+                @if($payment->method === 'Midtrans')
+
+                    <span class="status-active">
+                        Otomatis
+                    </span>
+
+                {{-- BAYAR DITEMPAT --}}
+                @elseif($payment->method === 'Bayar di Tempat')
+
+                    @if($payment->status !== 'Lunas')
 
                         <form
                             method="POST"
@@ -109,16 +109,39 @@
                             @csrf
 
                             <button class="btn-ui btn-green">
-                                Verifikasi
+
+                                Konfirmasi Bayar
+
                             </button>
 
                         </form>
 
-                    @elseif($payment->method === 'Bayar di Tempat')
+                    @else
 
-                        <span class="status-pending">
-                            Bayar di Tempat
+                        <span class="status-active">
+                            Sudah Dibayar
                         </span>
+
+                    @endif
+
+                {{-- DP / TRANSFER MANUAL --}}
+                @else
+
+                    @if($payment->status !== 'Lunas')
+
+                        <form
+                            method="POST"
+                            action="{{ route('admin.payments.verify', $payment) }}">
+
+                            @csrf
+
+                            <button class="btn-ui btn-green">
+
+                                Verifikasi
+
+                            </button>
+
+                        </form>
 
                     @else
 
@@ -128,23 +151,28 @@
 
                     @endif
 
-                </td>
+                @endif
 
-            </tr>
+            </td>
 
-            @empty
+        </tr>
 
-            <tr>
-                <td colspan="9" style="text-align:center;">
-                    Belum ada data pembayaran.
-                </td>
-            </tr>
+        @empty
 
-            @endforelse
+        <tr>
+
+            <td colspan="9" style="text-align:center;">
+                Belum ada data pembayaran.
+            </td>
+
+        </tr>
+
+        @endforelse
 
         </tbody>
 
     </table>
+
 </div>
 
 @endsection

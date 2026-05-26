@@ -287,6 +287,41 @@ $courtStatus = 'Buka';
 
         $months = range(1, 12);
 
+        // =========================
+// VENUE STATISTICS ADMIN
+// =========================
+
+// booking per hari (7 hari terakhir)
+$bookingDaily = Booking::whereIn('lapangan_id', $adminCourtIds)
+    ->selectRaw('DATE(booking_date) as tanggal, COUNT(*) as total')
+    ->groupBy('tanggal')
+    ->orderBy('tanggal')
+    ->pluck('total', 'tanggal');
+
+// lapangan paling ramai
+$topCourt = Booking::with('lapangan')
+    ->whereIn('lapangan_id', $adminCourtIds)
+    ->selectRaw('lapangan_id, COUNT(*) as total_booking')
+    ->groupBy('lapangan_id')
+    ->orderByDesc('total_booking')
+    ->first();
+
+// jam paling ramai
+$busyHour = Booking::whereIn('lapangan_id', $adminCourtIds)
+    ->selectRaw('start_time, COUNT(*) as total')
+    ->groupBy('start_time')
+    ->orderByDesc('total')
+    ->first();
+
+// status lapangan
+$activeCourts = Lapangan::whereIn('id', $adminCourtIds)
+    ->where('status', 'Buka')
+    ->count();
+
+$maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
+    ->where('status', '!=', 'Buka')
+    ->count();
+
         return view('admin.dashboard', $this->layoutData($request, [
 
             'courtStatus' => $courtStatus,
@@ -305,69 +340,86 @@ $courtStatus = 'Buka';
                     ->get(),
 
             'stats' => $admin->role === 'superadmin'
-                ? [
-                    [
-                        'label' => 'Total Users',
-                        'value' => User::where('role', 'user')->count()
-                    ],
-                    [
-                        'label' => 'Total Admin',
-                        'value' => User::where('role', 'admin')->count()
-                    ],
-                    [
-                        'label' => 'Total Lapangan',
-                        'value' => Lapangan::count()
-                    ],
-                    [
-                        'label' => 'Total Pendapatan',
-                        'value' => 'Rp ' . number_format(
-                            (int) Payment::where('status', 'Lunas')->sum('amount'),
-                            0,
-                            ',',
-                            '.'
-                        )
-                    ],
-                ]
+    ? [
+        [
+            'label' => 'Total Users',
+            'value' => User::where('role', 'user')->count()
+        ],
+        [
+            'label' => 'Total Admin',
+            'value' => User::where('role', 'admin')->count()
+        ],
+        [
+            'label' => 'Total Lapangan',
+            'value' => Lapangan::count()
+        ],
+        [
+            'label' => 'Total Pendapatan',
+            'value' => 'Rp ' . number_format(
+                (int) Payment::where('status', 'Lunas')->sum('amount'),
+                0,
+                ',',
+                '.'
+            )
+        ],
+    ]
 
-                : [
-                    [
-                        'label' => 'Total Booking',
-                        'value' => Booking::whereIn(
-                            'lapangan_id',
-                            $adminCourtIds
-                        )->count()
-                    ],
-                    [
-                        'label' => 'Lapangan Aktif',
-                        'value' => Lapangan::whereIn(
-                            'id',
-                            $adminCourtIds
-                        )->count()
-                    ],
-                    [
-                        'label' => 'Open Match',
-                        'value' => OpenMatch::whereHas(
-                            'booking',
-                            fn($q) =>
-                                $q->whereIn('lapangan_id', $adminCourtIds)
-                        )->count()
-                    ],
-                    [
-                        'label' => 'Pendapatan',
-                        'value' => 'Rp ' . number_format(
-                            (int) Payment::whereHas(
-                                'booking',
-                                fn($q) =>
-                                    $q->whereIn('lapangan_id', $adminCourtIds)
-                            )
-                            ->where('status', 'Lunas')
-                            ->sum('amount'),
-                            0,
-                            ',',
-                            '.'
-                        )
-                    ],
-                ],
+    : [
+        [
+            'label' => 'Total Booking',
+            'value' => Booking::whereIn(
+                'lapangan_id',
+                $adminCourtIds
+            )->count()
+        ],
+        [
+            'label' => 'Lapangan Aktif',
+            'value' => Lapangan::whereIn(
+                'id',
+                $adminCourtIds
+            )->count()
+        ],
+        [
+            'label' => 'Open Match',
+            'value' => OpenMatch::whereHas(
+                'booking',
+                fn($q) =>
+                    $q->whereIn('lapangan_id', $adminCourtIds)
+            )->count()
+        ],
+        [
+            'label' => 'Pendapatan',
+            'value' => 'Rp ' . number_format(
+                (int) Payment::whereHas(
+                    'booking',
+                    fn($q) =>
+                        $q->whereIn('lapangan_id', $adminCourtIds)
+                )
+                ->where('status', 'Lunas')
+                ->sum('amount'),
+                0,
+                ',',
+                '.'
+            )
+        ],
+    ],
+
+'topCourt' => $topCourt,
+
+'busyHour' => $busyHour,
+
+'courtStatus' => [
+    $activeCourts,
+    $maintenanceCourts
+],
+
+'bookingDailyLabels' => array_keys(
+    $bookingDaily->toArray()
+),
+
+'bookingDailyData' => array_values(
+    $bookingDaily->toArray()
+),
 
             'chartUsers' => array_map(
                 fn($m) => (int) ($userPerMonth[$m] ?? 0),
@@ -1049,33 +1101,78 @@ Mail::to($payment->user->email)
         return $query;
     }
 
-    public function exportReportsCsv(Request $request)
-    {
-        $reports = $this->reportQuery($request)->get();
-        $filename = 'laporan-transaksi-' . now()->format('Ymd-His') . '.csv';
+   public function exportReportsCsv(Request $request)
+{
+    $reports = $this->reportQuery($request)->get();
 
-        return response()->streamDownload(function () use ($reports) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['Tanggal', 'User', 'Email', 'Lapangan', 'Metode', 'Jumlah', 'Status']);
+    $filename = 'laporan-transaksi-' . now()->format('Ymd-His') . '.csv';
 
-            foreach ($reports as $report) {
-                fputcsv($handle, [
-                    optional($report->created_at)->format('Y-m-d H:i'),
-                    $report->user?->name ?? '-',
-                    $report->user?->email ?? '-',
-                    $report->booking?->lapangan?->nama ?? '-',
-                    $report->method ?? '-',
-                    (int) $report->amount,
-                    $report->status ?? '-',
-                ]);
+    return response()->streamDownload(function () use ($reports) {
+
+        $handle = fopen('php://output', 'w');
+
+        // UTF-8 BOM
+        fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        fputcsv($handle, [
+            'Tanggal',
+            'User',
+            'Email',
+            'Lapangan',
+            'Metode',
+            'Jumlah',
+            'Status'
+        ]);
+
+        foreach ($reports as $report) {
+
+            $tanggal = '-';
+
+            if (!empty($report->paid_at)) {
+
+                $tanggal = date(
+                    'd-m-Y H:i',
+                    strtotime($report->paid_at)
+                );
+
+            } elseif (!empty($report->created_at)) {
+
+                $tanggal = date(
+                    'd-m-Y H:i',
+                    strtotime($report->created_at)
+                );
             }
 
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
-    }
+            fputcsv($handle, [
+
+                $tanggal,
+
+                $report->user?->name ?? '-',
+
+                $report->user?->email ?? '-',
+
+                $report->booking?->lapangan?->nama ?? '-',
+
+                $report->method ?? '-',
+
+                'Rp ' . number_format(
+                    $report->amount,
+                    0,
+                    ',',
+                    '.'
+                ),
+
+                $report->status ?? '-',
+            ]);
+        }
+
+        fclose($handle);
+
+    }, $filename, [
+        'Content-Type' => 'text/csv; charset=UTF-8',
+        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+    ]);
+}
 
     public function exportReportsExcel(Request $request)
     {
@@ -1091,7 +1188,11 @@ Mail::to($payment->user->email)
 
         foreach ($reports as $report) {
             $html .= '<tr>';
-            $html .= '<td>' . e(optional($report->created_at)->format('Y-m-d H:i')) . '</td>';
+            $html .= '<td>' . e(
+    $report->paid_at
+        ? \Carbon\Carbon::parse($report->paid_at)->format('Y-m-d H:i')
+        : optional($report->created_at)->format('Y-m-d H:i')
+) . '</td>';
             $html .= '<td>' . e($report->user?->name ?? '-') . '</td>';
             $html .= '<td>' . e($report->user?->email ?? '-') . '</td>';
             $html .= '<td>' . e($report->booking?->lapangan?->nama ?? '-') . '</td>';
