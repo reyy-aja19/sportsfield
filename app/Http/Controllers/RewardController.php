@@ -104,8 +104,8 @@ class RewardController extends Controller
     public function apiIndex()
     {
         try {
-            // Mengambil reward yang statusnya aktif dan stoknya masih ada
-            $rewards = Reward::where('status', 'Aktif')->where('stock', '>', 0)->get();
+            // REVISI: Hanya mengambil reward yang statusnya Aktif (Abaikan pengecekan stok)
+            $rewards = Reward::where('status', 'Aktif')->get();
 
             // Memetakan URL Gambar agar bisa dibaca dari Flutter
             $rewards->transform(function($item) {
