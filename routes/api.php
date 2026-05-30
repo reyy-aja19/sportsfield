@@ -6,6 +6,7 @@ use App\Http\Controllers\LapanganController;
 use App\Http\Controllers\OpenMatchController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\RewardController;
 
 // PUBLIC
 Route::post('/register', [AuthController::class, 'register']);
@@ -30,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    Route::get('/rewards', [RewardController::class, 'apiIndex']);
+    Route::post('/rewards/redeem', [RewardController::class, 'apiRedeem']);
 
     Route::get('/bookings', [LapanganController::class, 'apiBookings']);
 
