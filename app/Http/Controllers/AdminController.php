@@ -1261,20 +1261,19 @@ class AdminController extends Controller
     }
 
     public function adminRequests(Request $request)
-    {
-        $admins = User::where('role', 'admin')
-            ->latest()
-            ->get();
+{
+    // Ambil data dari model AdminRequest bawaan tabel pengajuan
+    $requests = AdminRequest::with('user')->latest()->get();
 
-        return view(
-            'admin.superadmin.index',
-            $this->layoutData($request, [
-                'admins' => $admins,
-                'heading' => 'Management Admin',
-                'title' => 'Management Admin'
-            ])
-        );
-    }
+    return view(
+        'admin.superadmin.index',
+        $this->layoutData($request, [
+            'requests' => $requests, // Namanya disamakan jadi requests
+            'heading' => 'Management Admin',
+            'title' => 'Management Admin'
+        ])
+    );
+}
 
     public function checkin(
         Booking $booking
@@ -1333,14 +1332,5 @@ class AdminController extends Controller
             'success',
             'User berhasil check out'
         );
-    }
-
-    public function superadminIndex(Request $request): View
-    {
-        // 1. Ambil data pengajuan/request
-        $requests = AdminRequest::with('user')->latest()->get(); 
-
-        // 2. Kirim data $requests ke view beserta data layout utama
-        return view('admin.superadmin.index', $this->layoutData($request, compact('requests')));
     }
 }
