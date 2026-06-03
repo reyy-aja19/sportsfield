@@ -1261,19 +1261,26 @@ class AdminController extends Controller
     }
 
     public function adminRequests(Request $request)
-{
-    // Ambil data dari model AdminRequest bawaan tabel pengajuan
-    $requests = AdminRequest::with('user')->latest()->get();
+    {
+        // 1. Ambil data Pengajuan Admin (untuk tabel atas di baris 28)
+        $requests = AdminRequest::with('user')->latest()->get();
 
-    return view(
-        'admin.superadmin.index',
-        $this->layoutData($request, [
-            'requests' => $requests, // Namanya disamakan jadi requests
-            'heading' => 'Management Admin',
-            'title' => 'Management Admin'
-        ])
-    );
-}
+        // 2. Ambil data Admin yang sudah aktif (untuk tabel bawah di baris 110)
+        $admins = User::where('role', 'admin')
+            ->latest()
+            ->get();
+
+        // 3. Kirim KEDUA variabel tersebut ke view
+        return view(
+            'admin.superadmin.index',
+            $this->layoutData($request, [
+                'requests' => $requests,
+                'admins' => $admins,
+                'heading' => 'Management Admin',
+                'title' => 'Management Admin'
+            ])
+        );
+    }
 
     public function checkin(
         Booking $booking
