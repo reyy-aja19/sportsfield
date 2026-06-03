@@ -226,11 +226,16 @@ class LapanganController extends Controller
         $booking = \App\Models\Booking::create([
             'user_id'        => $userId,
             'lapangan_id'    => $request->lapangan_id,
-            'booking_date'        => $request->date,
+            'booking_date'   => $request->date,
             'start_time'     => $request->start_time,
             'end_time'       => $request->end_time ?? '',
             'total_price'    => $request->total_price,
-            'status'         => 'Pending',
+            
+            // ==================== DI SINI PERUBAHANNYA ====================
+            // Kita langsung kunci statusnya menjadi 'Lunas' tanpa kompromi
+            'status'         => 'Lunas', 
+            // ==============================================================
+            
             'payment_method' => $request->payment_method ?? 'Transfer Bank (VA)',
         ]);
 
