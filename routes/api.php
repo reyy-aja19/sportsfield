@@ -7,6 +7,7 @@ use App\Http\Controllers\OpenMatchController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RewardController;
+use App\Http\Controllers\NotificationController;
 
 // PUBLIC
 Route::post('/register', [AuthController::class, 'register']);
@@ -25,6 +26,7 @@ Route::post(
     [PaymentController::class, 'paymentSuccess']
 );
 
+Route::get('/notifications/{user_id}', [NotificationController::class, 'index']);
 // PRIVATE
 Route::middleware('auth:sanctum')->group(function () {
 
