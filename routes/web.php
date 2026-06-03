@@ -32,6 +32,7 @@ Route::middleware([CekLogin::class, 'role:superadmin,admin'])
     Route::post('/users/{user}/toggle', [AdminController::class, 'userToggle'])->name('users.toggle');
     Route::delete('/users/{user}', [AdminController::class, 'userDelete'])->name('users.delete');
 
+    Route::get('/superadmin', [AdminController::class, 'superadminIndex'])->name('superadmin.index');
     // MANAGEMENT ADMIN
     Route::get(
         '/admin-requests',

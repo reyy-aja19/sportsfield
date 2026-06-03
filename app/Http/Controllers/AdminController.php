@@ -85,8 +85,8 @@ class AdminController extends Controller
     private function normalizeFacilities(?array $facilities): array
     {
         return collect($facilities ?? [])
-            ->filter(fn ($value) => is_string($value) && trim($value) !== '')
-            ->map(fn ($value) => trim($value))
+            ->filter(fn($value) => is_string($value) && trim($value) !== '')
+            ->map(fn($value) => trim($value))
             ->unique()
             ->values()
             ->all();
@@ -114,15 +114,15 @@ class AdminController extends Controller
         $pendingReviewCount = Review::whereNull('reply_message')->count();
         $pendingPaymentCount = Payment::where('status', '!=', 'Lunas')->count();
         $pendingBookingCount =
-Booking::where('status','Menunggu')
-->count();
+            Booking::where('status', 'Menunggu')
+            ->count();
 
         $notifications = collect()
             ->merge(Review::with(['user', 'lapangan'])
                 ->whereNull('reply_message')
                 ->latest()
-->take(10)
-->get()
+                ->take(10)
+                ->get()
                 ->map(function ($review) {
                     return [
                         'type' => 'review',
@@ -156,25 +156,25 @@ Booking::where('status','Menunggu')
             'adminUser' => $this->adminUser($request),
             'pendingReviewCount' => $pendingReviewCount,
             'pendingPaymentCount' => $pendingPaymentCount,
-           'pendingBookingCount'=>$pendingBookingCount,
+            'pendingBookingCount' => $pendingBookingCount,
 
-'totalNotificationCount'=>
-$pendingReviewCount +
-$pendingPaymentCount +
-$pendingBookingCount,
+            'totalNotificationCount' =>
+            $pendingReviewCount +
+                $pendingPaymentCount +
+                $pendingBookingCount,
             'notifications' => $notifications,
         ], $extra);
     }
 
-    public function dashboard(Request $request): View
+    public function dashboard(Request $request): \Illuminate\View\View|\Illuminate\Http\RedirectResponse
     {
         $admin = $this->adminUser($request);
 
-if (!$admin) {
-    return redirect()->route('login');
-}
+        if (!$admin) {
+            return redirect()->route('login');
+        }
 
-$courtStatus = 'Buka';
+        $courtStatus = 'Buka';
 
         // venue milik admin login
         $adminVenueIds = Venue::where('user_id', $admin->id)
@@ -222,7 +222,6 @@ $courtStatus = 'Buka';
                     ->where('status', '!=', 'Aktif')
                     ->count(),
             ];
-
         }
 
         // =========================
@@ -231,10 +230,10 @@ $courtStatus = 'Buka';
         else {
 
             $revenuePerMonth = Payment::whereHas(
-                    'booking',
-                    fn($q) =>
-                        $q->whereIn('lapangan_id', $adminCourtIds)
-                )
+                'booking',
+                fn($q) =>
+                $q->whereIn('lapangan_id', $adminCourtIds)
+            )
                 ->where('status', 'Lunas')
                 ->selectRaw("
                     MONTH(created_at) as month,
@@ -244,9 +243,9 @@ $courtStatus = 'Buka';
                 ->pluck('total', 'month');
 
             $bookingPerMonth = Booking::whereIn(
-                    'lapangan_id',
-                    $adminCourtIds
-                )
+                'lapangan_id',
+                $adminCourtIds
+            )
                 ->selectRaw("
                     MONTH(booking_date) as month,
                     COUNT(*) as total
@@ -255,10 +254,10 @@ $courtStatus = 'Buka';
                 ->pluck('total', 'month');
 
             $userPerMonth = OpenMatch::whereHas(
-                    'booking',
-                    fn($q) =>
-                        $q->whereIn('lapangan_id', $adminCourtIds)
-                )
+                'booking',
+                fn($q) =>
+                $q->whereIn('lapangan_id', $adminCourtIds)
+            )
                 ->selectRaw("
                     MONTH(created_at) as month,
                     COUNT(*) as total
@@ -273,54 +272,54 @@ $courtStatus = 'Buka';
                     'lapangan_id',
                     $adminCourtIds
                 )
-                ->where('status', 'Lunas')
-                ->count(),
+                    ->where('status', 'Lunas')
+                    ->count(),
 
                 Booking::whereIn(
                     'lapangan_id',
                     $adminCourtIds
                 )
-                ->where('status', 'DP')
-                ->count(),
+                    ->where('status', 'DP')
+                    ->count(),
             ];
         }
 
         $months = range(1, 12);
 
         // =========================
-// VENUE STATISTICS ADMIN
-// =========================
+        // VENUE STATISTICS ADMIN
+        // =========================
 
-// booking per hari (7 hari terakhir)
-$bookingDaily = Booking::whereIn('lapangan_id', $adminCourtIds)
-    ->selectRaw('DATE(booking_date) as tanggal, COUNT(*) as total')
-    ->groupBy('tanggal')
-    ->orderBy('tanggal')
-    ->pluck('total', 'tanggal');
+        // booking per hari (7 hari terakhir)
+        $bookingDaily = Booking::whereIn('lapangan_id', $adminCourtIds)
+            ->selectRaw('DATE(booking_date) as tanggal, COUNT(*) as total')
+            ->groupBy('tanggal')
+            ->orderBy('tanggal')
+            ->pluck('total', 'tanggal');
 
-// lapangan paling ramai
-$topCourt = Booking::with('lapangan')
-    ->whereIn('lapangan_id', $adminCourtIds)
-    ->selectRaw('lapangan_id, COUNT(*) as total_booking')
-    ->groupBy('lapangan_id')
-    ->orderByDesc('total_booking')
-    ->first();
+        // lapangan paling ramai
+        $topCourt = Booking::with('lapangan')
+            ->whereIn('lapangan_id', $adminCourtIds)
+            ->selectRaw('lapangan_id, COUNT(*) as total_booking')
+            ->groupBy('lapangan_id')
+            ->orderByDesc('total_booking')
+            ->first();
 
-// jam paling ramai
-$busyHour = Booking::whereIn('lapangan_id', $adminCourtIds)
-    ->selectRaw('start_time, COUNT(*) as total')
-    ->groupBy('start_time')
-    ->orderByDesc('total')
-    ->first();
+        // jam paling ramai
+        $busyHour = Booking::whereIn('lapangan_id', $adminCourtIds)
+            ->selectRaw('start_time, COUNT(*) as total')
+            ->groupBy('start_time')
+            ->orderByDesc('total')
+            ->first();
 
-// status lapangan
-$activeCourts = Lapangan::whereIn('id', $adminCourtIds)
-    ->where('status', 'Buka')
-    ->count();
+        // status lapangan
+        $activeCourts = Lapangan::whereIn('id', $adminCourtIds)
+            ->where('status', 'Buka')
+            ->count();
 
-$maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
-    ->where('status', '!=', 'Buka')
-    ->count();
+        $maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
+            ->where('status', '!=', 'Buka')
+            ->count();
 
         return view('admin.dashboard', $this->layoutData($request, [
 
@@ -335,91 +334,91 @@ $maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
             'lapangan' => $admin->role === 'superadmin'
                 ? Lapangan::latest()->take(6)->get()
                 : Lapangan::whereIn('id', $adminCourtIds)
-                    ->latest()
-                    ->take(6)
-                    ->get(),
+                ->latest()
+                ->take(6)
+                ->get(),
 
             'stats' => $admin->role === 'superadmin'
-    ? [
-        [
-            'label' => 'Total Users',
-            'value' => User::where('role', 'user')->count()
-        ],
-        [
-            'label' => 'Total Admin',
-            'value' => User::where('role', 'admin')->count()
-        ],
-        [
-            'label' => 'Total Lapangan',
-            'value' => Lapangan::count()
-        ],
-        [
-            'label' => 'Total Pendapatan',
-            'value' => 'Rp ' . number_format(
-                (int) Payment::where('status', 'Lunas')->sum('amount'),
-                0,
-                ',',
-                '.'
-            )
-        ],
-    ]
+                ? [
+                    [
+                        'label' => 'Total Users',
+                        'value' => User::where('role', 'user')->count()
+                    ],
+                    [
+                        'label' => 'Total Admin',
+                        'value' => User::where('role', 'admin')->count()
+                    ],
+                    [
+                        'label' => 'Total Lapangan',
+                        'value' => Lapangan::count()
+                    ],
+                    [
+                        'label' => 'Total Pendapatan',
+                        'value' => 'Rp ' . number_format(
+                            (int) Payment::where('status', 'Lunas')->sum('amount'),
+                            0,
+                            ',',
+                            '.'
+                        )
+                    ],
+                ]
 
-    : [
-        [
-            'label' => 'Total Booking',
-            'value' => Booking::whereIn(
-                'lapangan_id',
-                $adminCourtIds
-            )->count()
-        ],
-        [
-            'label' => 'Lapangan Aktif',
-            'value' => Lapangan::whereIn(
-                'id',
-                $adminCourtIds
-            )->count()
-        ],
-        [
-            'label' => 'Open Match',
-            'value' => OpenMatch::whereHas(
-                'booking',
-                fn($q) =>
-                    $q->whereIn('lapangan_id', $adminCourtIds)
-            )->count()
-        ],
-        [
-            'label' => 'Pendapatan',
-            'value' => 'Rp ' . number_format(
-                (int) Payment::whereHas(
-                    'booking',
-                    fn($q) =>
-                        $q->whereIn('lapangan_id', $adminCourtIds)
-                )
-                ->where('status', 'Lunas')
-                ->sum('amount'),
-                0,
-                ',',
-                '.'
-            )
-        ],
-    ],
+                : [
+                    [
+                        'label' => 'Total Booking',
+                        'value' => Booking::whereIn(
+                            'lapangan_id',
+                            $adminCourtIds
+                        )->count()
+                    ],
+                    [
+                        'label' => 'Lapangan Aktif',
+                        'value' => Lapangan::whereIn(
+                            'id',
+                            $adminCourtIds
+                        )->count()
+                    ],
+                    [
+                        'label' => 'Open Match',
+                        'value' => OpenMatch::whereHas(
+                            'booking',
+                            fn($q) =>
+                            $q->whereIn('lapangan_id', $adminCourtIds)
+                        )->count()
+                    ],
+                    [
+                        'label' => 'Pendapatan',
+                        'value' => 'Rp ' . number_format(
+                            (int) Payment::whereHas(
+                                'booking',
+                                fn($q) =>
+                                $q->whereIn('lapangan_id', $adminCourtIds)
+                            )
+                                ->where('status', 'Lunas')
+                                ->sum('amount'),
+                            0,
+                            ',',
+                            '.'
+                        )
+                    ],
+                ],
 
-'topCourt' => $topCourt,
+            'topCourt' => $topCourt,
 
-'busyHour' => $busyHour,
+            'busyHour' => $busyHour,
 
-'courtStatus' => [
-    $activeCourts,
-    $maintenanceCourts
-],
+            'courtStatusCount' => [
+                $activeCourts,
+                $maintenanceCourts
+            ],
 
-'bookingDailyLabels' => array_keys(
-    $bookingDaily->toArray()
-),
+            'bookingDailyLabels' => array_keys(
+                $bookingDaily->toArray()
+            ),
 
-'bookingDailyData' => array_values(
-    $bookingDaily->toArray()
-),
+            'bookingDailyData' => array_values(
+                $bookingDaily->toArray()
+            ),
 
             'chartUsers' => array_map(
                 fn($m) => (int) ($userPerMonth[$m] ?? 0),
@@ -527,7 +526,8 @@ $maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
         $venues = Venue::orderBy('name')->get();
         $facilities = Facility::orderBy('name')->get();
 
-        return view('admin.lapangan.create',
+        return view(
+            'admin.lapangan.create',
             $this->layoutData($request, [
                 'venues' => $venues,
                 'facilities' => $facilities,
@@ -593,7 +593,8 @@ $maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
 
         $facilities = Facility::orderBy('name')->get();
 
-        return view('admin.lapangan.edit',
+        return view(
+            'admin.lapangan.edit',
             $this->layoutData($request, [
                 'lapangan' => $lapangan,
                 'venues' => $venues,
@@ -627,19 +628,19 @@ $maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
             $data['foto'] = $this->publicUpload($request, 'foto', 'lapangan');
         }
 
-       if ($request->hasFile('foto_gallery')) {
+        if ($request->hasFile('foto_gallery')) {
 
-    foreach (($lapangan->foto_gallery ?? []) as $gallery) {
-        $this->deletePublicUpload($gallery);
-    }
+            foreach (($lapangan->foto_gallery ?? []) as $gallery) {
+                $this->deletePublicUpload($gallery);
+            }
 
-    $data['foto_gallery'] =
-        $this->publicUploadMultiple(
-            $request,
-            'foto_gallery',
-            'lapangan'
-        );
-}
+            $data['foto_gallery'] =
+                $this->publicUploadMultiple(
+                    $request,
+                    'foto_gallery',
+                    'lapangan'
+                );
+        }
         $data['fasilitas'] = $this->normalizeFacilities($request->input('fasilitas', []));
         foreach ($data['fasilitas'] as $facilityName) {
             Facility::firstOrCreate([
@@ -696,56 +697,57 @@ $maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
     }
 
     public function bookingToggle(Booking $booking): RedirectResponse
-{
-    if ($booking->status === 'Check In' ||
-    $booking->status === 'Check Out') {
+    {
+        if (
+            $booking->status === 'Check In' ||
+            $booking->status === 'Check Out'
+        ) {
 
-    return back()->with(
-        'error',
-        'Booking sedang berlangsung'
-    );
-}
+            return back()->with(
+                'error',
+                'Booking sedang berlangsung'
+            );
+        }
 
-    $booking->status =
-        $booking->status === 'Lunas'
+        $booking->status =
+            $booking->status === 'Lunas'
             ? 'DP'
             : 'Lunas';
 
-    $booking->save();
+        $booking->save();
 
-    if ($booking->payment) {
-        $booking->payment->update([
-            'status' => $booking->status === 'Lunas'
-                ? 'Lunas'
-                : 'Menunggu',
+        if ($booking->payment) {
+            $booking->payment->update([
+                'status' => $booking->status === 'Lunas'
+                    ? 'Lunas'
+                    : 'Menunggu',
 
-            'paid_at' => $booking->status === 'Lunas'
-                ? now()
-                : null,
-        ]);
+                'paid_at' => $booking->status === 'Lunas'
+                    ? now()
+                    : null,
+            ]);
+        }
+
+        return back()->with(
+            'success',
+            'Status booking berhasil diperbarui.'
+        );
     }
 
-    return back()->with(
-        'success',
-        'Status booking berhasil diperbarui.'
-    );
-}
+    public function bookingDelete(
+        Booking $booking
+    ): RedirectResponse {
+        if ($booking->payment) {
+            $booking->payment->delete();
+        }
 
-   public function bookingDelete(
-    Booking $booking
-): RedirectResponse
-{
-    if ($booking->payment) {
-        $booking->payment->delete();
+        $booking->delete();
+
+        return back()->with(
+            'success',
+            'Booking berhasil dihapus.'
+        );
     }
-
-    $booking->delete();
-
-    return back()->with(
-        'success',
-        'Booking berhasil dihapus.'
-    );
-}
 
     public function openMatches(Request $request): View
     {
@@ -914,142 +916,139 @@ $maintenanceCourts = Lapangan::whereIn('id', $adminCourtIds)
         return view('admin.payments', $this->layoutData($request, compact('payments')));
     }
 
-   public function paymentVerify(Payment $payment): RedirectResponse
-{
-    $payment->update([
-        'status' => 'Lunas',
-        'paid_at' => now()
-    ]);
-
-    if ($payment->booking) {
-
-        $payment->booking->update([
-            'status' => 'Lunas'
+    public function paymentVerify(Payment $payment): RedirectResponse
+    {
+        $payment->update([
+            'status' => 'Lunas',
+            'paid_at' => now()
         ]);
 
-        if ($payment->user) {
+        if ($payment->booking) {
 
-            $booking = $payment->booking->load([
-                'user',
-                'lapangan'
+            $payment->booking->update([
+                'status' => 'Lunas'
             ]);
 
-            try {
+            if ($payment->user) {
 
-              \Log::info([
-    'payment_id' => $payment->id,
-    'user_id' => $payment->user_id,
-    'email' => $payment->user?->email,
-    'nama' => $payment->user?->name,
-]);
+                $booking = $payment->booking->load([
+                    'user',
+                    'lapangan'
+                ]);
 
-Mail::to($payment->user->email)
-    ->send(new BookingConfirmedMail($booking));
+                try {
 
-            } catch (\Exception $e) {
+                    \Log::info([
+                        'payment_id' => $payment->id,
+                        'user_id' => $payment->user_id,
+                        'email' => $payment->user?->email,
+                        'nama' => $payment->user?->name,
+                    ]);
 
-                \Log::error(
-                    'Mail error: '.$e->getMessage()
-                );
+                    Mail::to($payment->user->email)
+                        ->send(new BookingConfirmedMail($booking));
+                } catch (\Exception $e) {
+
+                    \Log::error(
+                        'Mail error: ' . $e->getMessage()
+                    );
+                }
             }
         }
+
+        return back()->with(
+            'success',
+            'Pembayaran berhasil diverifikasi.'
+        );
     }
 
-    return back()->with(
-        'success',
-        'Pembayaran berhasil diverifikasi.'
-    );
-}
-
     public function notifications(Request $request): View
-{
-    $notifications = collect()
+    {
+        $notifications = collect()
 
-    ->merge(
-        Review::with(['user','lapangan'])
-        ->whereNull('reply_message')
-        ->latest()
-        ->get()
-        ->map(function($review){
+            ->merge(
+                Review::with(['user', 'lapangan'])
+                    ->whereNull('reply_message')
+                    ->latest()
+                    ->get()
+                    ->map(function ($review) {
 
-            return [
-                'icon'=>'fa-regular fa-message',
-                'title'=>'Review belum dibalas',
+                        return [
+                            'icon' => 'fa-regular fa-message',
+                            'title' => 'Review belum dibalas',
 
-                'description'=>
-                    ($review->user?->name ?? 'User')
-                    .' • '.
-                    ($review->lapangan?->nama ?? 'Lapangan'),
+                            'description' => ($review->user?->name ?? 'User')
+                                . ' • ' .
+                                ($review->lapangan?->nama ?? 'Lapangan'),
 
-                'time'=>
-                    optional(
-                        $review->created_at
-                    )->diffForHumans(),
+                            'time' =>
+                            optional(
+                                $review->created_at
+                            )->diffForHumans(),
 
-                'sort_at'=>
-                    optional(
-                        $review->created_at
-                    )->timestamp ?? 0,
+                            'sort_at' =>
+                            optional(
+                                $review->created_at
+                            )->timestamp ?? 0,
 
-                'url'=>route('admin.reviews')
-            ];
-        })
-    )
+                            'url' => route('admin.reviews')
+                        ];
+                    })
+            )
 
-    ->merge(
-        Payment::with([
-            'user',
-            'booking.lapangan'
-        ])
-        ->where('status','!=','Lunas')
-        ->latest()
-        ->get()
+            ->merge(
+                Payment::with([
+                    'user',
+                    'booking.lapangan'
+                ])
+                    ->where('status', '!=', 'Lunas')
+                    ->latest()
+                    ->get()
 
-        ->map(function($payment){
+                    ->map(function ($payment) {
 
-            return [
+                        return [
 
-                'icon'=>'fa-solid fa-wallet',
+                            'icon' => 'fa-solid fa-wallet',
 
-                'title'=>
-                    'Pembayaran menunggu verifikasi',
+                            'title' =>
+                            'Pembayaran menunggu verifikasi',
 
-                'description'=>
-                    ($payment->user?->name ?? 'User')
-                    .' • '.
-                    ($payment->booking?->lapangan?->nama ?? 'Lapangan'),
+                            'description' => ($payment->user?->name ?? 'User')
+                                . ' • ' .
+                                ($payment->booking?->lapangan?->nama ?? 'Lapangan'),
 
-                'time'=>
-                    optional(
-                        $payment->created_at
-                    )->diffForHumans(),
+                            'time' =>
+                            optional(
+                                $payment->created_at
+                            )->diffForHumans(),
 
-                'sort_at'=>
-                    optional(
-                        $payment->created_at
-                    )->timestamp ?? 0,
+                            'sort_at' =>
+                            optional(
+                                $payment->created_at
+                            )->timestamp ?? 0,
 
-                'url'=>
-                    route('admin.payments')
-            ];
-        })
-    )
+                            'url' =>
+                            route('admin.payments')
+                        ];
+                    })
+            )
 
-    ->sortByDesc('sort_at')
-    ->values();
+            ->sortByDesc('sort_at')
+            ->values();
 
-    return view(
-        'admin.notifications',
-        $this->layoutData(
-            $request,
-            [
-                'notifications'=>$notifications,
-                'heading'=>'Semua Notifikasi',
-                'title'=>'Notifikasi'
-            ]
-        )
-    );
-}
+        return view(
+            'admin.notifications',
+            $this->layoutData(
+                $request,
+                [
+                    'notifications' => $notifications,
+                    'heading' => 'Semua Notifikasi',
+                    'title' => 'Notifikasi'
+                ]
+            )
+        );
+    }
 
     public function reports(Request $request): View
     {
@@ -1101,78 +1100,76 @@ Mail::to($payment->user->email)
         return $query;
     }
 
-   public function exportReportsCsv(Request $request)
-{
-    $reports = $this->reportQuery($request)->get();
+    public function exportReportsCsv(Request $request)
+    {
+        $reports = $this->reportQuery($request)->get();
 
-    $filename = 'laporan-transaksi-' . now()->format('Ymd-His') . '.csv';
+        $filename = 'laporan-transaksi-' . now()->format('Ymd-His') . '.csv';
 
-    return response()->streamDownload(function () use ($reports) {
+        return response()->streamDownload(function () use ($reports) {
 
-        $handle = fopen('php://output', 'w');
+            $handle = fopen('php://output', 'w');
 
-        // UTF-8 BOM
-        fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
-
-        fputcsv($handle, [
-            'Tanggal',
-            'User',
-            'Email',
-            'Lapangan',
-            'Metode',
-            'Jumlah',
-            'Status'
-        ]);
-
-        foreach ($reports as $report) {
-
-            $tanggal = '-';
-
-            if (!empty($report->paid_at)) {
-
-                $tanggal = date(
-                    'd-m-Y H:i',
-                    strtotime($report->paid_at)
-                );
-
-            } elseif (!empty($report->created_at)) {
-
-                $tanggal = date(
-                    'd-m-Y H:i',
-                    strtotime($report->created_at)
-                );
-            }
+            // UTF-8 BOM
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
             fputcsv($handle, [
-
-                $tanggal,
-
-                $report->user?->name ?? '-',
-
-                $report->user?->email ?? '-',
-
-                $report->booking?->lapangan?->nama ?? '-',
-
-                $report->method ?? '-',
-
-                'Rp ' . number_format(
-                    $report->amount,
-                    0,
-                    ',',
-                    '.'
-                ),
-
-                $report->status ?? '-',
+                'Tanggal',
+                'User',
+                'Email',
+                'Lapangan',
+                'Metode',
+                'Jumlah',
+                'Status'
             ]);
-        }
 
-        fclose($handle);
+            foreach ($reports as $report) {
 
-    }, $filename, [
-        'Content-Type' => 'text/csv; charset=UTF-8',
-        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-    ]);
-}
+                $tanggal = '-';
+
+                if (!empty($report->paid_at)) {
+
+                    $tanggal = date(
+                        'd-m-Y H:i',
+                        strtotime($report->paid_at)
+                    );
+                } elseif (!empty($report->created_at)) {
+
+                    $tanggal = date(
+                        'd-m-Y H:i',
+                        strtotime($report->created_at)
+                    );
+                }
+
+                fputcsv($handle, [
+
+                    $tanggal,
+
+                    $report->user?->name ?? '-',
+
+                    $report->user?->email ?? '-',
+
+                    $report->booking?->lapangan?->nama ?? '-',
+
+                    $report->method ?? '-',
+
+                    'Rp ' . number_format(
+                        $report->amount,
+                        0,
+                        ',',
+                        '.'
+                    ),
+
+                    $report->status ?? '-',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
 
     public function exportReportsExcel(Request $request)
     {
@@ -1189,10 +1186,10 @@ Mail::to($payment->user->email)
         foreach ($reports as $report) {
             $html .= '<tr>';
             $html .= '<td>' . e(
-    $report->paid_at
-        ? \Carbon\Carbon::parse($report->paid_at)->format('Y-m-d H:i')
-        : optional($report->created_at)->format('Y-m-d H:i')
-) . '</td>';
+                $report->paid_at
+                    ? \Carbon\Carbon::parse($report->paid_at)->format('Y-m-d H:i')
+                    : optional($report->created_at)->format('Y-m-d H:i')
+            ) . '</td>';
             $html .= '<td>' . e($report->user?->name ?? '-') . '</td>';
             $html .= '<td>' . e($report->user?->email ?? '-') . '</td>';
             $html .= '<td>' . e($report->booking?->lapangan?->nama ?? '-') . '</td>';
@@ -1280,63 +1277,70 @@ Mail::to($payment->user->email)
     }
 
     public function checkin(
-    Booking $booking
-)
-{
-    if (!in_array($booking->status, ['Lunas'])) {
-    return back()->with(
-        'error',
-        'Booking belum dapat check in'
-    );
-}
+        Booking $booking
+    ) {
+        if (!in_array($booking->status, ['Lunas'])) {
+            return back()->with(
+                'error',
+                'Booking belum dapat check in'
+            );
+        }
 
-    if ($booking->checkin_at) {
+        if ($booking->checkin_at) {
+
+            return back()->with(
+                'error',
+                'User sudah check in'
+            );
+        }
+
+        $booking->update([
+            'status' => 'Check In',
+            'checkin_at' => now()
+        ]);
 
         return back()->with(
-            'error',
-            'User sudah check in'
+            'success',
+            'User berhasil check in'
         );
     }
 
-    $booking->update([
-        'status' => 'Check In',
-        'checkin_at' => now()
-    ]);
 
-    return back()->with(
-        'success',
-        'User berhasil check in'
-    );
-}
+    public function checkout(
+        Booking $booking
+    ) {
+        if ($booking->status !== 'Check In') {
+            return back()->with(
+                'error',
+                'User belum check in'
+            );
+        }
 
+        if ($booking->checkout_at) {
 
-public function checkout(
-    Booking $booking
-)
-{
-   if ($booking->status !== 'Check In') {
-    return back()->with(
-        'error',
-        'User belum check in'
-    );
-}
+            return back()->with(
+                'error',
+                'User sudah check out'
+            );
+        }
 
-    if ($booking->checkout_at) {
+        $booking->update([
+            'status' => 'Check Out',
+            'checkout_at' => now()
+        ]);
 
         return back()->with(
-            'error',
-            'User sudah check out'
+            'success',
+            'User berhasil check out'
         );
     }
 
-    $booking->update([
-        'status' => 'Check Out',
-        'checkout_at' => now()
-    ]);
+    public function superadminIndex(Request $request): View
+    {
+        // 1. Ambil data pengajuan/request
+        $requests = AdminRequest::with('user')->latest()->get(); 
 
-    return back()->with(
-        'success',
-        'User berhasil check out'
-    );
-}
+        // 2. Kirim data $requests ke view beserta data layout utama
+        return view('admin.superadmin.index', $this->layoutData($request, compact('requests')));
+    }
 }
