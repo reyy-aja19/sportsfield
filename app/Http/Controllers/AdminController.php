@@ -681,18 +681,29 @@ class AdminController extends Controller
             'hours' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'string'],
         ]);
+
         $court = Lapangan::findOrFail($data['lapangan_id']);
         $data['total_price'] = $court->harga * (int) $data['hours'];
+
+        $methodLower = strtolower($data['payment_method']);
+        
+        if ($methodLower !== 'cash' && $methodLower !== 'bayar di tempat') {
+            $data['status'] = 'Lunas';
+        }
+
         $booking = Booking::create($data);
+
         Payment::create([
             'booking_id' => $booking->id,
             'user_id' => $booking->user_id,
             'method' => $booking->payment_method,
             'amount' => $booking->total_price,
             'proof_image' => 'uploads/payments/sample-proof.svg',
-            'status' => $booking->status === 'Lunas' ? 'Lunas' : 'Menunggu',
-            'paid_at' => $booking->status === 'Lunas' ? now() : null,
+            // Status pembayaran otomatis ikut Lunas jika booking-nya Lunas
+            'status' => $data['status'] === 'Lunas' ? 'Lunas' : 'Pending',
+            'paid_at' => $data['status'] === 'Lunas' ? now() : null,
         ]);
+
         return back()->with('success', 'Booking berhasil ditambahkan.');
     }
 
