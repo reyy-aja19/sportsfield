@@ -1274,7 +1274,10 @@ class AdminController extends Controller
     public function adminRequests(Request $request)
     {
         // 1. Ambil data Pengajuan Admin (untuk tabel atas di baris 28)
-        $requests = AdminRequest::with('user')->latest()->get();
+        $requests = AdminRequest::with('user')
+    ->where('status', 'Pending')
+    ->latest()
+    ->get();
 
         // 2. Ambil data Admin yang sudah aktif (untuk tabel bawah di baris 110)
         $admins = User::where('role', 'admin')

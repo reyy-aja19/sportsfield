@@ -12,9 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('admin_requests', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
+    $table->id();
+
+    $table->foreignId('user_id')
+        ->constrained()
+        ->cascadeOnDelete();
+
+    $table->enum('status', [
+        'pending',
+        'approved',
+        'rejected'
+    ])->default('pending');
+
+    $table->text('reason')->nullable();
+
+    $table->timestamps();
+});
     }
 
     /**

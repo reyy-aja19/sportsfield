@@ -38,7 +38,7 @@ class AuthController extends Controller
             'message' => 'Registrasi berhasil',
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'data' => $user
+            'user' => $user
         ], 201);
     }
 

@@ -180,125 +180,168 @@ class LapanganController extends Controller
         ], 200);
     }
 
-    public function getBookedSlots(Request $request)
-    {
-        $slots = \App\Models\Booking::select('lapangan_id', 'tanggal', 'start_time', 'end_time')
-            ->whereIn('status', ['Lunas', 'Pending'])
-            ->get();
+   public function getBookedSlots(Request $request)
+{
+    $request->validate([
+        'lapangan_id' => 'required|integer',
+        'date' => 'required|date',
+    ]);
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Data slot terbooking berhasil diambil',
-            'data' => $slots
-        ], 200);
-    }
+    $bookings = \App\Models\Booking::where('lapangan_id', $request->lapangan_id)
+        ->where('booking_date', $request->date)
+        ->whereIn('status', ['Lunas', 'Pending'])
+        ->get();
 
-    public function apiBookings(Request $request)
-    {
-        $bookings = \App\Models\Booking::with(['lapangan'])
-            ->where('user_id', $request->user()->id)
-            ->latest()
-            ->get();
+    $bookedSlots = [];
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Riwayat booking user berhasil diambil',
-            'data' => $bookings
-        ], 200);
-    }
+    foreach ($bookings as $booking) {
+        $start = (int) explode(':', $booking->start_time)[0];
+        $end = (int) explode(':', $booking->end_time)[0];
 
-    public function apiStoreBooking(Request $request)
-    {
-        // 1. Validasi Request disesuaikan dengan data yang dikirim Flutter & Kebutuhan DB
-        $request->validate([
-            'lapangan_id'    => 'required|integer',
-            'payment_method' => 'nullable|string',
-            'date'           => 'required|date',
-            'start_time'     => 'required',
-            'end_time'       => 'nullable|string',
-            'total_price'    => 'required',
-        ]);
-
-        // Proteksi pencarian User ID (Gunakan token auth jika ada, jika tidak pakai userId manual)
-        $userId = $request->user() ? $request->user()->id : ($request->userId ?? $request->user_id ?? 1);
-
-        // 2. Simpan data booking awal ke database
-        $booking = \App\Models\Booking::create([
-            'user_id'        => $userId,
-            'lapangan_id'    => $request->lapangan_id,
-            'booking_date'   => $request->date,
-            'start_time'     => $request->start_time,
-            'end_time'       => $request->end_time ?? '',
-            'total_price'    => $request->total_price,
-            
-            // ==================== DI SINI PERUBAHANNYA ====================
-            // Kita langsung kunci statusnya menjadi 'Lunas' tanpa kompromi
-            'status'         => 'Lunas', 
-            // ==============================================================
-            
-            'payment_method' => $request->payment_method ?? 'Transfer Bank (VA)',
-        ]);
-
-        // Buat Order ID unik untuk dikirimkan ke Midtrans
-        $orderId = 'BOOK-' . time() . '-' . $booking->id;
-
-        // 3. Logika Midtrans jika metode pembayaran menggunakan online (bukan Tunai)
-        if ($request->payment_method !== 'Tunai di Tempat') {
-
-            // Set konfigurasi Midtrans langsung menggunakan config/services.php
-            \Midtrans\Config::$serverKey    = config('services.midtrans.server_key');
-            \Midtrans\Config::$isProduction = config('services.midtrans.is_production');
-            \Midtrans\Config::$isSanitized  = config('services.midtrans.is_sanitized');
-            \Midtrans\Config::$is3ds        = config('services.midtrans.is_3ds');
-
-            // Susun payload parameter transaksi untuk Midtrans
-            $params = [
-                'transaction_details' => [
-                    'order_id'     => $orderId,
-                    'gross_amount' => (int) $request->total_price,
-                ],
-                'item_details' => [
-                    [
-                        'id'       => $request->lapangan_id,
-                        'price'    => (int) $request->total_price,
-                        'quantity' => 1,
-                        'name'     => 'Sewa Lapangan ID: ' . $request->lapangan_id,
-                    ]
-                ],
-                'customer_details' => [
-                    'first_name' => 'User ID: ' . $userId,
-                ],
-            ];
-
-            try {
-                // Request ke Midtrans menggunakan core method resmi SDK
-                $response = \Midtrans\Snap::createTransaction($params);
-                $redirectUrl = $response->redirect_url;
-
-                return response()->json([
-                    'status'         => true,
-                    'message'        => 'Booking berhasil dibuat, silakan selesaikan pembayaran.',
-                    'current_points' => ($request->user() ? $request->user()->points : 0) + 5,
-                    'redirect_url'   => $redirectUrl,
-                    'data'           => $booking
-                ], 201);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status'  => false,
-                    'message' => 'Gagal menghubungkan ke Midtrans: ' . $e->getMessage()
-                ], 500);
-            }
+        for ($i = $start; $i < $end; $i++) {
+            $bookedSlots[] = sprintf("%02d:00", $i);
         }
-
-        // 4. Response jika user memilih pembayaran offline "Tunai di Tempat"
-        return response()->json([
-            'status'         => true,
-            'message'        => 'Booking tunai berhasil dibuat.',
-            'current_points' => ($request->user() ? $request->user()->points : 0) + 5,
-            'data'           => $booking
-        ], 201);
     }
 
+    return response()->json([
+        'status' => true,
+        'data' => array_values(array_unique($bookedSlots))
+    ]);
+}
+
+   public function apiBookings(Request $request)
+{
+    $bookings = \App\Models\Booking::with('lapangan')
+        ->where('user_id', $request->user()->id)
+        ->latest()
+        ->get();
+
+    foreach ($bookings as $booking) {
+        if (now()->gt($booking->end_time)) {
+            $booking->status = "Selesai";
+            $booking->save();
+        }
+    }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Riwayat booking user berhasil diambil',
+        'data' => $bookings
+    ]);
+}
+
+  public function apiStoreBooking(Request $request)
+{
+    $request->validate([
+        'lapangan_id'    => 'required|integer',
+        'payment_method' => 'nullable|string',
+        'date'           => 'required|date',
+        'start_time'     => 'required',
+        'end_time'       => 'nullable|string',
+        'total_price'    => 'required',
+    ]);
+
+    $userId = $request->user()
+        ? $request->user()->id
+        : ($request->userId ?? 1);
+
+    $total = (int) $request->total_price;
+
+    // ===============================
+    // 🔥 HITUNG DP 50%
+    // ===============================
+    $dpAmount = 0;
+    $remaining = 0;
+
+    if ($request->payment_method === 'DP') {
+        $dpAmount = $total * 0.5;
+        $remaining = $total - $dpAmount;
+    }
+
+    // ===============================
+    // STATUS LOGIC
+    // ===============================
+    $total = $request->total_price;
+
+$status = 'Pending';
+$paidAmount = 0;
+$remainingAmount = $total;
+
+if ($request->payment_method === 'DP') {
+    $paidAmount = $total * 0.5;
+    $remainingAmount = $total * 0.5;
+    $status = 'DP';
+}
+
+if ($request->payment_method === 'Midtrans Full') {
+    $paidAmount = $total;
+    $remainingAmount = 0;
+    $status = 'Pending'; // nanti jadi Lunas dari callback
+}
+
+    // ===============================
+    // CREATE BOOKING
+    // ===============================
+   $booking = \App\Models\Booking::create([
+    'user_id'        => $userId,
+    'lapangan_id'    => $request->lapangan_id,
+    'booking_date'   => $request->date,
+    'start_time'     => $request->start_time,
+    'end_time'       => $request->end_time ?? '',
+    'total_price'    => $total,
+
+    'paid_amount'    => $paidAmount,
+    'remaining_amount'=> $remainingAmount,
+    'status'         => $status,
+
+    'payment_method' => $request->payment_method,
+]);
+
+    $orderId = 'BOOK-' . time() . '-' . $booking->id;
+
+    // ===============================
+    // MIDTRANS ONLY (DP atau FULL)
+    // ===============================
+    if ($request->payment_method === 'Midtrans' || $request->payment_method === 'DP') {
+
+        \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
+        \Midtrans\Config::$isProduction = config('services.midtrans.is_production');
+        \Midtrans\Config::$isSanitized = config('services.midtrans.is_sanitized');
+        \Midtrans\Config::$is3ds = config('services.midtrans.is_3ds');
+
+        // 🔥 DP = bayar 50%
+        $grossAmount = $request->payment_method === 'DP'
+            ? $dpAmount
+            : $total;
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $orderId,
+                'gross_amount' => (int) $grossAmount,
+            ],
+        ];
+
+        $response = \Midtrans\Snap::createTransaction($params);
+
+        return response()->json([
+            'status' => true,
+            'message' => $request->payment_method === 'DP'
+                ? 'DP 50% berhasil dibuat'
+                : 'Pembayaran penuh dibuat',
+            'redirect_url' => $response->redirect_url,
+            'data' => $booking
+        ]);
+    }
+
+    // ===============================
+    // TUNAI / OFFLINE
+    // ===============================
+    return response()->json([
+        'status' => true,
+        'message' => 'Booking tunai berhasil dibuat (menunggu admin)',
+        'data' => $booking
+    ]);
+}
     public function apiUpdateStatus(Request $request, $id)
     {
         $request->validate([
@@ -321,33 +364,72 @@ class LapanganController extends Controller
      * Webhook/Callback Otomatis dari Server Midtrans untuk update status Lunas
      */
     public function midtransCallback(Request $request)
-    {
-        $serverKey = config('services.midtrans.server_key');
-        $hashedKey = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
+{
+    $serverKey = config('services.midtrans.server_key');
+    $hashedKey = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
-        if ($hashedKey !== $request->signature_key) {
-            return response()->json(['message' => 'Invalid Signature'], 403);
-        }
-
-        $orderParts = explode('-', $request->order_id);
-        $bookingId = end($orderParts);
-
-        $booking = \App\Models\Booking::find($bookingId);
-
-        if (!$booking) {
-            return response()->json(['message' => 'Booking not found'], 404);
-        }
-
-        $transactionStatus = $request->transaction_status;
-
-        if ($transactionStatus == 'settlement' || $transactionStatus == 'capture') {
-            $booking->update(['status' => 'Lunas']);
-        } elseif ($transactionStatus == 'pending') {
-            $booking->update(['status' => 'Pending']);
-        } elseif ($transactionStatus == 'deny' || $transactionStatus == 'expire' || $transactionStatus == 'cancel') {
-            $booking->update(['status' => 'Expired']);
-        }
-
-        return response()->json(['message' => 'Callback processed successfully'], 200);
+    if ($hashedKey !== $request->signature_key) {
+        return response()->json(['message' => 'Invalid Signature'], 403);
     }
+
+    $orderParts = explode('-', $request->order_id);
+    $bookingId = end($orderParts);
+
+    $booking = \App\Models\Booking::find($bookingId);
+
+    if (!$booking) {
+        return response()->json(['message' => 'Booking not found'], 404);
+    }
+
+    $transactionStatus = $request->transaction_status;
+
+    // ================= SUCCESS =================
+   if ($transactionStatus == 'settlement' || $transactionStatus == 'capture') {
+
+    $booking = \App\Models\Booking::find($bookingId);
+
+    if ($booking) {
+
+        // FULL PAYMENT
+        if ($booking->payment_method == 'Midtrans Full') {
+            $booking->update([
+                'status' => 'Lunas',
+                'paid_amount' => $booking->total_price,
+                'remaining_amount' => 0,
+                'is_paid_off' => true
+            ]);
+        }
+
+        // DP PAYMENT
+        if ($booking->payment_method == 'DP') {
+            $booking->update([
+                'status' => 'DP',
+                'paid_amount' => $booking->total_price * 0.5,
+                'remaining_amount' => $booking->total_price * 0.5,
+            ]);
+        }
+
+        // POINT SYSTEM
+        if (!$booking->point_given && $booking->status == 'Lunas') {
+            $user = \App\Models\User::find($booking->user_id);
+            $user->points += 5;
+            $user->save();
+
+            $booking->update(['point_given' => true]);
+        }
+    }
+}
+
+    // ================= PENDING =================
+    elseif ($transactionStatus == 'pending') {
+        $booking->update(['status' => 'Pending']);
+    }
+
+    // ================= FAILED =================
+    elseif ($transactionStatus == 'deny' || $transactionStatus == 'expire' || $transactionStatus == 'cancel') {
+        $booking->update(['status' => 'Expired']);
+    }
+
+    return response()->json(['message' => 'Callback processed successfully'], 200);
+}
 }

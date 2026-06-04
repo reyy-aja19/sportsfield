@@ -17,8 +17,11 @@ return new class extends Migration
             $table->string('start_time');
             $table->string('end_time');
             $table->unsignedTinyInteger('hours')->default(1);
+            $table->integer('paid_amount')->default(0);
+$table->integer('remaining_amount')->default(0);
+$table->boolean('is_paid_off')->default(false);
             $table->unsignedInteger('total_price');
-            $table->string('status')->default('Menunggu');
+            $table->string('status')->default('Pending');
             $table->timestamps();
         });
     }
