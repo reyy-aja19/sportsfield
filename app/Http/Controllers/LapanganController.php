@@ -261,22 +261,28 @@ class LapanganController extends Controller
     // ===============================
     // STATUS LOGIC
     // ===============================
-    $total = $request->total_price;
 
-$status = 'Pending';
+$paymentMethod = $request->payment_method;
+
 $paidAmount = 0;
 $remainingAmount = $total;
 
-if ($request->payment_method === 'DP') {
+$status = 'Pending';
+
+if ($paymentMethod === 'DP') {
     $paidAmount = $total * 0.5;
     $remainingAmount = $total * 0.5;
     $status = 'DP';
 }
 
-if ($request->payment_method === 'Midtrans Full') {
+if ($paymentMethod === 'Midtrans Full') {
     $paidAmount = $total;
     $remainingAmount = 0;
-    $status = 'Pending'; // nanti jadi Lunas dari callback
+    $status = 'Pending'; // nanti LUNAS dari callback
+}
+
+if ($paymentMethod === 'Cash') {
+    $status = 'Pending'; // admin approve
 }
 
     // ===============================
@@ -302,7 +308,7 @@ if ($request->payment_method === 'Midtrans Full') {
     // ===============================
     // MIDTRANS ONLY (DP atau FULL)
     // ===============================
-    if ($request->payment_method === 'Midtrans' || $request->payment_method === 'DP') {
+    if ($request->payment_method === 'Midtrans Full' || $request->payment_method === 'DP') {
 
         \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
         \Midtrans\Config::$isProduction = config('services.midtrans.is_production');
@@ -388,7 +394,7 @@ if ($request->payment_method === 'Midtrans Full') {
 
     $booking = \App\Models\Booking::find($bookingId);
 
-    if ($booking) {
+    if ($booking && $booking->status != 'Lunas') {
 
         // FULL PAYMENT
         if ($booking->payment_method == 'Midtrans Full') {

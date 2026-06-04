@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('paid_amount')->default(0);
 $table->integer('remaining_amount')->default(0);
 $table->boolean('is_paid_off')->default(false);
+$table->boolean('point_given')->default(false);
             $table->unsignedInteger('total_price');
             $table->string('status')->default('Pending');
             $table->timestamps();
