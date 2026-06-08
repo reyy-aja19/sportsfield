@@ -17,10 +17,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
 
-        // FIX: Melewati pengecekan CSRF Token untuk request Webhook dari Midtrans
+        // FIX 1: Melewati pengecekan CSRF Token untuk request Webhook dari Midtrans
         $middleware->validateCsrfTokens(except: [
             'api/midtrans-callback',
         ]);
+
+        // FIX 2: Mengaktifkan Trust Proxies agar Laravel di dalam Docker mengenali Header SSL/HTTPS dari Nginx
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
