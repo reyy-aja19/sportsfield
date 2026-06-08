@@ -37,7 +37,7 @@ Route::get('/notifications/{user_id}', [NotificationController::class, 'index'])
 Route::post('/request-admin', [AdminRequestController::class, 'store']);
 // Endpoint Webhook disamakan dengan URL di Dashboard Midtrans
 Route::post('/midtrans-callback', [PaymentController::class, 'paymentSuccess']);
-
+Route::match(['get', 'post'], '/midtrans-callback', [PaymentController::class, 'paymentSuccess']);
 // Admin data (optional public)
 Route::get('/admin/all-bookings', [PaymentController::class, 'apiAllBookings']);
 
