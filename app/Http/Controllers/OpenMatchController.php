@@ -133,7 +133,7 @@ class OpenMatchController extends Controller
         if ($alreadyJoined) {
             return response()->json([
                 'status'  => false,
-                'message' => 'Gagal join: Kamu sudah bergabung ke dalam match ini sebelumnya.'
+                'message' => 'Kamu sudah bergabung ke dalam match ini sebelumnya.'
             ], 400);
         }
 

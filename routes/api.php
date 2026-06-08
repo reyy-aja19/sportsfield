@@ -29,16 +29,16 @@ Route::get('/fields/{id}', [LapanganController::class, 'apiShow']);
 // Booking helpers
 Route::get('/booked-slots', [LapanganController::class, 'getBookedSlots']);
 
-// Notifications (kalau mau dibuat auth, pindahkan ke middleware)
+// Notifications
 Route::get('/notifications/{user_id}', [NotificationController::class, 'index']);
 
 // Admin request
 Route::post('/request-admin', [AdminRequestController::class, 'store']);
 
-// Payment webhook / callback
-Route::post('/payment-success', [PaymentController::class, 'paymentSuccess']);
+// FIX: Endpoint Webhook disamakan dengan URL di Dashboard Midtrans
+Route::post('/midtrans-callback', [PaymentController::class, 'paymentSuccess']);
 
-// Admin data (optional public - kalau sensitif pindahkan ke auth)
+// Admin data (optional public)
 Route::get('/admin/all-bookings', [PaymentController::class, 'apiAllBookings']);
 
 
@@ -62,7 +62,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Bookings
     Route::get('/bookings', [LapanganController::class, 'apiBookings']);
     Route::post('/booking', [LapanganController::class, 'apiStoreBooking']);
-
     Route::post('/booking/{id}/update-status', [LapanganController::class, 'apiUpdateStatus']);
 
     // Open Match

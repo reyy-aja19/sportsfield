@@ -12,14 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // 1. Daftarkan alias middleware kamu seperti biasa
+        // Alias Middleware Custom
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
 
-        // 2. TAMBAHKAN INI: Kecualikan webhook Midtrans dari proteksi CSRF token
+        // FIX: Melewati pengecekan CSRF Token untuk request Webhook dari Midtrans
         $middleware->validateCsrfTokens(except: [
-            'api/midtrans-callback', 
+            'api/midtrans-callback',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
