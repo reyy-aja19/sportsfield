@@ -4,36 +4,24 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class FixAdminRequestsTable extends Migration
 {
-    public function up(): void
+    public function up()
     {
-        Schema::table('admin_requests', function (Blueprint $table) {
-
-            $table->foreignId('user_id')
-                ->nullable()
-                ->after('id')
-                ->constrained()
-                ->cascadeOnDelete();
-
-            $table->text('reason')->nullable();
-
-            $table->string('status')
-                ->default('Pending');
-        });
+        // Cek apakah kolom 'user_id' sudah ada
+        if (!Schema::hasColumn('admin_requests', 'user_id')) {
+            Schema::table('admin_requests', function (Blueprint $table) {
+                $table->integer('user_id')->nullable();
+            });
+        }
     }
 
-    public function down(): void
-    {
-        Schema::table('admin_requests', function (Blueprint $table) {
+    public function down()
+{
+    Schema::table('admin_requests', function (Blueprint $table) {
+        $table->dropForeign(['user_id']); // Hapus foreign key
+        $table->dropColumn('user_id');   // Hapus kolom
+    });
+}
 
-            $table->dropForeign(['user_id']);
-
-            $table->dropColumn([
-                'user_id',
-                'reason',
-                'status'
-            ]);
-        });
-    }
-};
+}
