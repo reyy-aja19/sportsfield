@@ -10,24 +10,18 @@ class Booking extends Model
     use HasFactory;
 
     protected $fillable = [
-    'user_id',
-    'lapangan_id',
-    'payment_method',
-    'booking_date',
-    'start_time',
-    'end_time',
-    'hours',
-    'total_price',
-    'status',
-
-    'paid_amount',
-    'remaining_amount',
-    'is_paid_off',
-    'point_given',
-
-    'checkin_at',
-    'checkout_at'
-];
+        'user_id',
+        'lapangan_id',
+        'payment_method',
+        'booking_date',
+        'start_time',
+        'end_time',
+        'hours',
+        'total_price',
+        'status',
+        'checkin_at',
+        'checkout_at'
+    ];
 
     protected function casts(): array
     {
