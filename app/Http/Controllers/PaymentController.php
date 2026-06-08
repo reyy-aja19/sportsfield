@@ -127,22 +127,42 @@ class PaymentController extends Controller
         $transactionStatus = $request->input('transaction_status');
         $paymentType = $request->input('payment_type');
 
-        // Proteksi jika hanya berupa tes ping dari dashboard Midtrans
+        // 1. Proteksi awal jika data order_id kosong
         if (!$orderIdRaw) {
-            return response()->json(['status' => true, 'message' => 'Reset Webhook Berhasil!'], 200);
+            return response()->json(['success' => true, 'message' => 'Notification bypass sukses.'], 200);
         }
 
         Log::info('--- MIDTRANS WEBHOOK INCOMING ---');
         Log::info("Order ID Mentah: $orderIdRaw | Status Transaksi: $transactionStatus | Tipe: $paymentType");
 
-        // Memisahkan ID database dengan tanda '-' timestamp
-        $cleanId = preg_replace('/[^0-9]/', '', explode('-', $orderIdRaw)[0]);
+        // 2. CEK DATA SIMULASI/TESTING: Jika ini merupakan request uji coba dari sistem internal Midtrans Dashboard
+        if (str_contains($orderIdRaw, 'payment_notif_test')) {
+            Log::info('Deteksi Otomatis: Request ini adalah testing/ping dari sistem Midtrans. Bypass Aktif.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Ping webhook berhasil diterima dengan baik!'
+            ], 200); // Mengembalikan 200 OK agar Midtrans mencatat sukses dan tidak mengirim email error
+        }
+
+        // 3. PROSES DATA TRANSAKSI REAL (Dari Aplikasi Flutter)
+        // Memisahkan ID database dengan tanda '-' timestamp jika formatnya string (misal: "85-1718290")
+        $parts = explode('-', $orderIdRaw);
+        $cleanId = preg_replace('/[^0-9]/', '', $parts[0]);
+        
+        if (empty($cleanId)) {
+            Log::error("Gagal mengekstrak ID valid dari Order ID: $orderIdRaw");
+            return response()->json(['success' => false, 'message' => 'Format Order ID salah'], 400);
+        }
+
         $booking = Booking::with(['user', 'lapangan'])->find($cleanId);
 
         if (!$booking) {
             Log::error("Data Booking dengan ID $cleanId tidak ditemukan di database.");
-            return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 404);
+            // Tetap berikan respon 200 jika data tidak ada di DB uji coba agar Midtrans menghentikan perulangan kirim
+            return response()->json(['success' => false, 'message' => 'Data tidak ditemukan namun webhook dicatat'], 200);
         }
+
+        Log::info('Data Booking Real Ditemukan. Nama User: ' . ($booking->user->name ?? 'Guest') . ' | Status Saat Ini: ' . $booking->status);
 
         // KONDISI UTAMA: JIKA PEMBAYARAN FULL BERHASIL -> LANGSUNG SET KE LUNAS
         if ($transactionStatus == 'settlement' || $transactionStatus == 'capture') {
@@ -151,7 +171,7 @@ class PaymentController extends Controller
                 'status' => 'Lunas'
             ]);
 
-            Log::info("Booking ID $cleanId diproses otomatis dan BERHASIL LUNAS.");
+            Log::info("Booking ID $cleanId untuk user " . ($booking->user->name ?? '') . " BERHASIL DIUBAH MENJADI LUNAS.");
 
             // Kirim email konfirmasi invoice otomatis ke customer
             try {
@@ -177,6 +197,9 @@ class PaymentController extends Controller
             Log::info("Booking ID $cleanId otomatis diubah menjadi Batal.");
         }
 
-        return response()->json(['success' => true, 'message' => 'Webhook Midtrans berhasil diproses'], 200);
+        return response()->json([
+            'success' => true, 
+            'message' => 'Status transaksi ' . $booking->id . ' untuk ' . ($booking->user->name ?? 'User') . ' berhasil diproses sebagai ' . $transactionStatus
+        ], 200);
     }
 }
