@@ -224,9 +224,9 @@ class LapanganController extends Controller
 
     if (!empty($booking->end_time)) {
 
-        $bookingEnd = \Carbon\Carbon::parse(
-            $booking->booking_date . ' ' . $booking->end_time
-        );
+       $bookingEnd = $booking->booking_date
+    ->copy()
+    ->setTimeFromTimeString($booking->end_time);
 
         if (
             now()->greaterThan($bookingEnd)
