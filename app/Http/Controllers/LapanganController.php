@@ -189,7 +189,11 @@ class LapanganController extends Controller
 
     $bookings = \App\Models\Booking::where('lapangan_id', $request->lapangan_id)
         ->where('booking_date', $request->date)
-        ->whereIn('status', ['Lunas', 'Pending'])
+        ->whereIn('status', [
+    'Pending',
+    'Lunas',
+    'DP'
+])
         ->get();
 
     $bookedSlots = [];
@@ -216,12 +220,28 @@ class LapanganController extends Controller
         ->latest()
         ->get();
 
-    foreach ($bookings as $booking) {
-        if (now()->gt($booking->end_time)) {
-            $booking->status = "Selesai";
+   foreach ($bookings as $booking) {
+
+    if (!empty($booking->end_time)) {
+
+        $bookingEnd = \Carbon\Carbon::parse(
+            $booking->booking_date . ' ' . $booking->end_time
+        );
+
+        if (
+            now()->greaterThan($bookingEnd)
+            &&
+            !in_array($booking->status, [
+                'Selesai',
+                'Batal',
+                'Expired'
+            ])
+        ) {
+            $booking->status = 'Selesai';
             $booking->save();
         }
     }
+}
 
     return response()->json([
         'status' => true,
@@ -270,9 +290,9 @@ $remainingAmount = $total;
 $status = 'Pending';
 
 if ($paymentMethod === 'DP') {
-    $paidAmount = $total * 0.5;
-    $remainingAmount = $total * 0.5;
-    $status = 'DP';
+    $paidAmount = 0;
+    $remainingAmount = $total;
+    $status = 'Pending';
 }
 
 if ($paymentMethod === 'Midtrans Full') {
@@ -285,6 +305,32 @@ if ($paymentMethod === 'Cash') {
     $status = 'Pending'; // admin approve
 }
 
+    $existing = \App\Models\Booking::where(
+    'lapangan_id',
+    $request->lapangan_id
+)
+->where('booking_date', $request->date)
+->whereNotIn('status', ['Batal', 'Expired'])
+->where(function ($q) use ($request) {
+
+    $q->where(function ($query) use ($request) {
+
+        $query->where('start_time', '<', $request->end_time)
+              ->where('end_time', '>', $request->start_time);
+
+    });
+
+})
+->exists();
+
+if ($existing) {
+
+    return response()->json([
+        'status' => false,
+        'message' => 'Jam sudah dibooking user lain'
+    ], 409);
+
+}
     // ===============================
     // CREATE BOOKING
     // ===============================
@@ -293,7 +339,7 @@ if ($paymentMethod === 'Cash') {
     'lapangan_id'    => $request->lapangan_id,
     'booking_date'   => $request->date,
     'start_time'     => $request->start_time,
-    'end_time'       => $request->end_time ?? '',
+    'end_time' => $request->end_time ?? $request->start_time,
     'total_price'    => $total,
 
     'paid_amount'    => $paidAmount,
@@ -416,7 +462,13 @@ if ($paymentMethod === 'Cash') {
         }
 
         // POINT SYSTEM
-        if (!$booking->point_given && $booking->status == 'Lunas') {
+        $booking->refresh();
+
+if (
+    !$booking->point_given
+    &&
+    $booking->status === 'Lunas'
+) {
             $user = \App\Models\User::find($booking->user_id);
             $user->points += 5;
             $user->save();
