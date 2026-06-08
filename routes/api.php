@@ -33,10 +33,10 @@ Route::get('/booked-slots', [LapanganController::class, 'getBookedSlots']);
 // Notifications
 Route::get('/notifications/{user_id}', [NotificationController::class, 'index']);
 
-// Admin request
-Route::post('/request-admin', [AdminRequestController::class, 'store']);
+// FIX: Menggunakan Route::match untuk menangani bug downgrade POST ke GET saat redirect SSL hosting
+Route::match(['get', 'post'], '/request-admin', [AdminRequestController::class, 'store']);
 
-// FIX: Endpoint Webhook disamakan dengan URL di Dashboard Midtrans
+// Endpoint Webhook disamakan dengan URL di Dashboard Midtrans
 Route::post('/midtrans-callback', [PaymentController::class, 'paymentSuccess']);
 
 // Admin data (optional public)
