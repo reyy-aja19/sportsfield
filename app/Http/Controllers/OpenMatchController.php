@@ -46,7 +46,7 @@ class OpenMatchController extends Controller
         $userId = $request->user() ? $request->user()->id : ($request->userId ?? $request->user_id ?? 1);
 
         // 2. KUNCI ALUR: Cek kepemilikan booking dan status pembayarannya
-        $booking = \App\Models\Booking::where('id', $request->booking_id)
+        $booking = \App\Models\Booking::whereId($request->booking_id)
             ->where('user_id', $userId)
             ->first();
 
