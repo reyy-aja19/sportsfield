@@ -11,6 +11,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RewardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AdminRequestController;
+use App\Http\Controllers\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,4 +69,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/matches', [OpenMatchController::class, 'index']);
     Route::post('/matches', [OpenMatchController::class, 'store']);
     Route::post('/matches/{id}/join', [OpenMatchController::class, 'join']);
+    Route::get('/matches/{matchId}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/matches/{matchId}/messages', [ChatController::class, 'sendMessage']);
 });
