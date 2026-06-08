@@ -14,7 +14,7 @@ class PaymentController extends Controller
 {
     public function __construct()
     {
-        // Membaca konfigurasi dari config/services.php (Aman dari config:cache & VS Code Warning hilang)
+        // Membaca konfigurasi dari config/services.php
         Config::$serverKey = config('services.midtrans.server_key');
         Config::$isProduction = filter_var(config('services.midtrans.is_production', false), FILTER_VALIDATE_BOOLEAN);
         Config::$isSanitized = filter_var(config('services.midtrans.is_sanitized', true), FILTER_VALIDATE_BOOLEAN);
@@ -84,8 +84,8 @@ class PaymentController extends Controller
             return response()->json(['status' => false, 'message' => 'Booking tidak ditemukan'], 404);
         }
 
-        // Format order_id: IDDATABASE-TIMESTAMP (Supaya Midtrans tidak duplicate order ID)
-        $orderId = $booking->id . '-' . time();
+        // Format order_id disamakan dengan kebutuhan Flutter kamu
+        $orderId = 'BOOK-' . time() . '-' . $booking->id;
 
         $params = [
             'transaction_details' => [
@@ -141,13 +141,16 @@ class PaymentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Ping webhook berhasil diterima dengan baik!'
-            ], 200); // Mengembalikan 200 OK agar Midtrans mencatat sukses dan tidak mengirim email error
+            ], 200);
         }
 
         // 3. PROSES DATA TRANSAKSI REAL (Dari Aplikasi Flutter)
-        // Memisahkan ID database dengan tanda '-' timestamp jika formatnya string (misal: "85-1718290")
+        // Memotong format "BOOK-TIMESTAMP-ID" (Contoh: BOOK-1780962219-90)
         $parts = explode('-', $orderIdRaw);
-        $cleanId = preg_replace('/[^0-9]/', '', $parts[0]);
+        
+        // Mengambil elemen paling terakhir dari hasil potongan array (yaitu ID database asli)
+        $lastPart = end($parts);
+        $cleanId = preg_replace('/[^0-9]/', '', $lastPart);
         
         if (empty($cleanId)) {
             Log::error("Gagal mengekstrak ID valid dari Order ID: $orderIdRaw");
@@ -183,14 +186,12 @@ class PaymentController extends Controller
             }
 
         } elseif ($transactionStatus == 'pending') {
-            // Jika user baru membuka opsi pembayaran (belum melakukan bayar/transfer)
             $booking->update([
                 'status' => 'Pending'
             ]);
             Log::info("Booking ID $cleanId menunggu pembayaran dari user.");
 
         } elseif (in_array($transactionStatus, ['expire', 'cancel', 'deny'])) {
-            // Jika pembayaran hangus atau dibatalkan oleh user
             $booking->update([
                 'status' => 'Batal'
             ]);
