@@ -34,8 +34,7 @@ Route::get('/booked-slots', [LapanganController::class, 'getBookedSlots']);
 Route::get('/notifications/{user_id}', [NotificationController::class, 'index']);
 
 // FIX: Menggunakan Route::match untuk menangani bug downgrade POST ke GET saat redirect SSL hosting
-Route::match(['get', 'post'], '/request-admin', [AdminRequestController::class, 'store']);
-
+Route::post('/request-admin', [AdminRequestController::class, 'store']);
 // Endpoint Webhook disamakan dengan URL di Dashboard Midtrans
 Route::post('/midtrans-callback', [PaymentController::class, 'paymentSuccess']);
 
