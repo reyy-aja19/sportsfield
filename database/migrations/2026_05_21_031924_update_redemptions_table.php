@@ -30,7 +30,9 @@ return new class extends Migration
     {
         Schema::table('redemptions', function (Blueprint $table) {
 
-            $table->dropColumn('redeem_code');
+           if (Schema::hasColumn('redemptions', 'redeem_code')) {
+    $table->dropColumn('redeem_code');
+}
 
         });
     }
