@@ -161,14 +161,16 @@
     </aside>
     <main class="main-panel">
        <header class="topbar">
-    {{-- Search hanya muncul di halaman bukan dashboard --}}
-    @if(!request()->routeIs('admin.dashboard'))
-        <form class="search-wrap search-clean" id="adminGlobalSearch">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" name="q" value="{{ request('q') }}" placeholder="Search..." data-global-search>
-            <button type="submit"><i class="fa-solid fa-arrow-right"></i></button>
-        </form>
-    @endif
+    {{-- Search hanya untuk Admin --}}
+@if(!request()->routeIs('admin.dashboard'))
+    <form class="search-wrap search-clean" id="adminGlobalSearch">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search..." data-global-search>
+        <button type="submit">
+            <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </form>
+@endif
 
     {{-- Notif & Profil selalu di kanan --}}
     <div class="topbar-right">
