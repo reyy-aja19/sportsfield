@@ -12,6 +12,7 @@ use App\Http\Controllers\RewardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AdminRequestController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,6 +43,12 @@ Route::match(['get', 'post'], '/midtrans-callback', [PaymentController::class, '
 // Admin data (optional public)
 Route::get('/admin/all-bookings', [PaymentController::class, 'apiAllBookings']);
 
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return response()->json([
+        'status' => true,
+        'data' => $request->user()
+    ]);
+});
 
 /*
 |--------------------------------------------------------------------------
