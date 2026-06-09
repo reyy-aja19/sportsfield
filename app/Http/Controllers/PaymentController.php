@@ -45,7 +45,17 @@ class PaymentController extends Controller
     public function verify($id)
     {
         $booking = Booking::with(['user', 'lapangan'])->findOrFail($id);
-        $booking->update(['status' => 'Lunas']);
+        
+        // Pastikan poin hanya ditambah jika status belum Lunas
+        if (strtoupper($booking->status) !== 'LUNAS') {
+            $booking->update(['status' => 'Lunas']);
+
+            // TAMBAHAN POIN
+            if ($booking->user) {
+                $booking->user->increment('points', 5);
+                Log::info("Manual Verify: 5 points added to User ID: {$booking->user->id}");
+            }
+        }
 
         try {
             if ($booking->user?->email) {
@@ -55,7 +65,7 @@ class PaymentController extends Controller
             Log::error('Mail error via Manual Verification: ' . $e->getMessage());
         }
 
-        return redirect()->back()->with('success', 'Pembayaran berhasil diverifikasi!');
+        return redirect()->back()->with('success', 'Pembayaran berhasil diverifikasi & poin ditambahkan!');
     }
 
     /**
@@ -168,6 +178,11 @@ class PaymentController extends Controller
         if ($transactionStatus == 'settlement' || $transactionStatus == 'capture') {
             $booking->update(['status' => 'Lunas']);
             Log::info("Booking ID $cleanId BERHASIL DIUBAH MENJADI LUNAS.");
+
+            if ($booking->user) {
+                $booking->user->increment('points', 5);
+                Log::info("Webhook Poin: 5 points added to User ID: {$booking->user->id}");
+            }
 
             try {
                 if ($booking->user?->email) {
