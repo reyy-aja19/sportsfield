@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Mail\BookingConfirmedMail;
 use Illuminate\Support\Facades\Mail;
@@ -20,18 +21,12 @@ class PaymentController extends Controller
         Config::$is3ds = filter_var(config('services.midtrans.is_3ds', true), FILTER_VALIDATE_BOOLEAN);
     }
 
-    /**
-     * TAMPILAN WEB ADMIN: Menampilkan data pembayaran di dashboard web
-     */
     public function index()
     {
         $payments = Booking::with(['user', 'lapangan'])->latest()->get();
         return view('admin.payments', compact('payments'));
     }
 
-    /**
-     * WEB ADMIN: Update status manual jika admin ingin mengubah dari dashboard
-     */
     public function updateStatus(Request $request, int $id)
     {
         $booking = Booking::findOrFail($id);
@@ -39,27 +34,29 @@ class PaymentController extends Controller
         return redirect()->back()->with('success', 'Status pembayaran berhasil diperbarui');
     }
 
-    /**
-     * WEB ADMIN: Tombol verifikasi cepat di Web Admin
-     */
     public function verify($id)
     {
-        $booking = Booking::with(['user', 'lapangan'])->findOrFail($id);
+        $booking = Booking::findOrFail($id);
         
-        // Pastikan poin hanya ditambah jika status belum Lunas
         if (strtoupper($booking->status) !== 'LUNAS') {
             $booking->update(['status' => 'Lunas']);
 
-            // TAMBAHAN POIN
-            if ($booking->user) {
-                $booking->user->increment('points', 5);
-                Log::info("Manual Verify: 5 points added to User ID: {$booking->user->id}");
+            // Menggunakan User::find agar lebih aman dibanding relasi
+            if (!empty($booking->user_id)) {
+                $user = User::find($booking->user_id);
+                if ($user) {
+                    $user->increment('points', 5);
+                    Log::info("Manual Verify: 5 points added to User ID: {$user->id}");
+                } else {
+                    Log::error("Manual Verify Gagal: User ID {$booking->user_id} tidak ditemukan.");
+                }
             }
         }
 
         try {
-            if ($booking->user?->email) {
-                Mail::to($booking->user->email)->send(new BookingConfirmedMail($booking));
+            $user = User::find($booking->user_id);
+            if ($user && $user->email) {
+                Mail::to($user->email)->send(new BookingConfirmedMail($booking));
             }
         } catch (\Exception $e) {
             Log::error('Mail error via Manual Verification: ' . $e->getMessage());
@@ -68,9 +65,6 @@ class PaymentController extends Controller
         return redirect()->back()->with('success', 'Pembayaran berhasil diverifikasi & poin ditambahkan!');
     }
 
-    /**
-     * API FLUTTER: Digunakan oleh Flutter Admin / History
-     */
     public function apiAllBookings()
     {
         try {
@@ -81,9 +75,6 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * API FLUTTER: Pembuat Snap Token
-     */
     public function createSnapToken(Request $request)
     {
         $bookingId = $request->input('booking_id');
@@ -126,79 +117,47 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * WEBHOOK MIDTRANS: Penerima laporan otomatis dari Midtrans
-     */
     public function paymentSuccess(Request $request)
     {
         $orderIdRaw = $request->input('order_id');
         $transactionStatus = $request->input('transaction_status');
-        $paymentType = $request->input('payment_type');
 
         if (!$orderIdRaw) {
             return response()->json(['success' => true, 'message' => 'Notification bypass sukses.'], 200);
         }
 
-        Log::info('--- MIDTRANS WEBHOOK INCOMING ---');
-        Log::info("Order ID Mentah: $orderIdRaw | Status Transaksi: $transactionStatus | Tipe: $paymentType");
-
-        if (str_contains($orderIdRaw, 'payment_notif_test')) {
-            Log::info('Deteksi Otomatis: Request ini adalah testing/ping dari sistem Midtrans. Bypass Aktif.');
-            return response()->json(['success' => true, 'message' => 'Ping webhook berhasil!'], 200);
-        }
-
-        // AMBIL ID MENGGUNAKAN INDEKS MANUAL (Aman dari bug Docker)
         $parts = explode('-', $orderIdRaw);
-        $cleanId = '';
-        
-        if (count($parts) > 0) {
-            $lastPart = $parts[count($parts) - 1]; 
-            $cleanId = preg_replace('/[^0-9]/', '', $lastPart);
-        }
-        
-        if (empty($cleanId)) {
-            Log::error("Gagal mengekstrak ID valid dari Order ID: $orderIdRaw");
-            return response()->json(['success' => false, 'message' => 'Format Order ID salah'], 400);
+        $cleanId = preg_replace('/[^0-9]/', '', end($parts));
+        $booking = Booking::find($cleanId);
+
+        if (!$booking || strtoupper($booking->status) === 'LUNAS') {
+            return response()->json(['success' => true, 'message' => 'Sudah lunas atau tidak ditemukan.'], 200);
         }
 
-        $booking = Booking::with(['user', 'lapangan'])->find($cleanId);
-
-        if (!$booking) {
-            Log::error("Data Booking dengan ID $cleanId tidak ditemukan.");
-            return response()->json(['success' => false, 'message' => 'Data tidak ditemukan'], 200);
-        }
-
-        // SYSTEM LOCK: Jika status sudah Lunas, kunci data dari overwrite webhook pending susulan
-        if (strtoupper($booking->status) === 'LUNAS') {
-            Log::info("Booking ID $cleanId sudah berstatus LUNAS. Mengabaikan status susulan: $transactionStatus");
-            return response()->json(['success' => true, 'message' => 'Status sudah lunas, perubahan diabaikan.'], 200);
-        }
-
-        // PROSES PERUBAHAN STATUS DATA
         if ($transactionStatus == 'settlement' || $transactionStatus == 'capture') {
             $booking->update(['status' => 'Lunas']);
-            Log::info("Booking ID $cleanId BERHASIL DIUBAH MENJADI LUNAS.");
 
-            if ($booking->user) {
-                $booking->user->increment('points', 5);
-                Log::info("Webhook Poin: 5 points added to User ID: {$booking->user->id}");
+            // Tambah Poin secara langsung menggunakan user_id dari booking
+            if (!empty($booking->user_id)) {
+                $user = User::find($booking->user_id);
+                if ($user) {
+                    $user->increment('points', 5);
+                    Log::info("Webhook Poin: 5 points added to User ID: {$user->id}");
+                }
             }
 
             try {
-                if ($booking->user?->email) {
-                    Mail::to($booking->user->email)->send(new BookingConfirmedMail($booking));
+                $user = User::find($booking->user_id);
+                if ($user && $user->email) {
+                    Mail::to($user->email)->send(new BookingConfirmedMail($booking));
                 }
             } catch (\Exception $e) {
-                Log::error('Gagal kirim email invoice: ' . $e->getMessage());
+                Log::error('Gagal kirim email: ' . $e->getMessage());
             }
-
         } elseif ($transactionStatus == 'pending') {
             $booking->update(['status' => 'Pending']);
-            Log::info("Booking ID $cleanId menunggu pembayaran.");
-
         } elseif (in_array($transactionStatus, ['expire', 'cancel', 'deny'])) {
             $booking->update(['status' => 'Batal']);
-            Log::info("Booking ID $cleanId diubah menjadi Batal.");
         }
 
         return response()->json(['success' => true, 'message' => 'Status transaksi diproses.'], 200);
